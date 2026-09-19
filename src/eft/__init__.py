@@ -4,6 +4,7 @@ from eft.analysis.bec_detector import BECDetector
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
+from eft.analysis.threat_scorer import ThreatScorer
 from eft.analysis.url_analyzer import URLAnalyzer
 from eft.core.exceptions import (
     CorruptFileError,
@@ -57,6 +58,13 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.threat import (
+    CompositeRiskReport,
+    RiskFactor,
+    RiskSeverity,
+    RiskVectorType,
+    VectorRiskScore,
+)
 from eft.models.timeline import (
     ForensicTimelineReport,
     TimelineAnomalyType,
@@ -69,6 +77,7 @@ from eft.reporting.timeline import TimelineGenerator
 from eft.ui.inspector import EmailInspector
 from eft.ui.map_visualizer import TransitMapVisualizer
 from eft.ui.sanitizer import HTMLSanitizer
+from eft.ui.threat_card import ThreatCardRenderer
 
 __version__ = "0.1.0"
 
@@ -136,6 +145,13 @@ __all__ = [
     "TimelineEvent",
     "ForensicTimelineReport",
     "ForensicReportExporter",
+    "ThreatScorer",
+    "ThreatCardRenderer",
+    "RiskSeverity",
+    "RiskVectorType",
+    "RiskFactor",
+    "VectorRiskScore",
+    "CompositeRiskReport",
     "EmailInspector",
     "TransitMapVisualizer",
     "HTMLSanitizer",
