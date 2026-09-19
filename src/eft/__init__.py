@@ -1,3 +1,4 @@
+from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.core.exceptions import (
     CorruptFileError,
@@ -22,6 +23,7 @@ from eft.models.canonical import (
     FileTypeInspection,
     HeaderDecomposition,
     IngestionResult,
+    IPNetworkIntelligence,
     IsolatedBody,
     IsolatedBodyArtifacts,
     MIMEPartNode,
@@ -43,11 +45,13 @@ __all__ = [
     "MIMETreeDecomposer",
     "AttachmentExtractor",
     "RelayAnalyzer",
+    "NetworkIntelligenceService",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
     "ExtractedAttachment",
     "FileTypeInspection",
+    "IPNetworkIntelligence",
     "MIMEPartNode",
     "HeaderDecomposition",
     "RelayHop",
