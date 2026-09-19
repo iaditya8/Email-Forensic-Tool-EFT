@@ -155,4 +155,7 @@ __all__ = [
     "EmailInspector",
     "TransitMapVisualizer",
     "HTMLSanitizer",
+    "__version__",
 ]
+
+__version__ = "1.0.0"
