@@ -454,9 +454,20 @@
 
       // Summary
       document.getElementById('res-subject').innerText = email.subject || "(No Subject)";
-      document.getElementById('res-from').innerText = email.sender || "-";
-      document.getElementById('res-to').innerText = (email.recipients || []).join(", ") || "-";
-      document.getElementById('res-sha256').innerText = data.sha256 || email.sha256 || "-";
+      document.getElementById('res-from').innerText = email.from_address || email.sender || email.from || "-";
+      
+      let toDisplay = "-";
+      if (email.to_addresses && email.to_addresses.length > 0) {
+        toDisplay = email.to_addresses.join(", ");
+      } else if (email.recipients && email.recipients.length > 0) {
+        toDisplay = email.recipients.join(", ");
+      } else if (email.to) {
+        toDisplay = email.to;
+      }
+      document.getElementById('res-to').innerText = toDisplay;
+      
+      const shaValue = data.sha256 || (email.source_file && email.source_file.hashes ? email.source_file.hashes.sha256 : null) || email.sha256 || "-";
+      document.getElementById('res-sha256').innerText = shaValue;
 
       // Critical alerts / Risk factors
       const alertsContainer = document.getElementById('critical-alerts-container');
@@ -474,7 +485,7 @@
       renderAuthTab(email.authentication_report || email.authentication_results);
       renderTransitTab(email.transit_route);
       renderUrlsTab(email.url_report || email.url_threat_report);
-      renderAttachmentsTab(email.attachment_threat_report);
+      renderAttachmentsTab(email.attachment_threat_report, email.extracted_attachments || email.attachments);
       renderBECTab(email.bec_report);
       renderTimelineTab(email.timeline_report);
       renderRawTab(email);
@@ -488,16 +499,61 @@
         return;
       }
 
-      const rows = [
-        { proto: "SPF", res: auth.spf_result, domain: auth.spf_domain, details: auth.spf_details },
-        { proto: "DKIM", res: auth.dkim_result, domain: auth.dkim_domain, details: auth.dkim_details },
-        { proto: "DMARC", res: auth.dmarc_result, domain: auth.dmarc_domain, details: auth.dmarc_details },
-        { proto: "ARC", res: auth.arc_result, domain: "-", details: auth.arc_details }
-      ];
+      const rows = [];
+      
+      // SPF
+      if (auth.spf) {
+        rows.push({
+          proto: "SPF",
+          res: auth.spf.status || "none",
+          domain: auth.spf.mail_from_domain || auth.spf.sender_ip || "-",
+          details: auth.spf.details || `Sender IP: ${auth.spf.sender_ip || 'N/A'}, Aligned: ${auth.spf.is_aligned}`
+        });
+      } else {
+        rows.push({ proto: "SPF", res: auth.spf_result || "none", domain: auth.spf_domain || "-", details: auth.spf_details || "-" });
+      }
+
+      // DKIM
+      if (auth.dkim_signatures && auth.dkim_signatures.length > 0) {
+        auth.dkim_signatures.forEach((dkim, idx) => {
+          rows.push({
+            proto: `DKIM #${idx + 1}`,
+            res: dkim.status || "none",
+            domain: dkim.domain ? `${dkim.domain} (s=${dkim.selector || '*'})` : "-",
+            details: dkim.details || `Algorithm: ${dkim.algorithm || 'rsa-sha256'}, Aligned: ${dkim.is_aligned}`
+          });
+        });
+      } else {
+        rows.push({ proto: "DKIM", res: auth.dkim_result || "none", domain: auth.dkim_domain || "-", details: auth.dkim_details || "-" });
+      }
+
+      // DMARC
+      if (auth.dmarc) {
+        rows.push({
+          proto: "DMARC",
+          res: auth.dmarc.status || "none",
+          domain: auth.dmarc.header_from_domain || "-",
+          details: auth.dmarc.details || `Policy: ${auth.dmarc.policy || 'none'}, Disposition: ${auth.dmarc.disposition || 'none'}`
+        });
+      } else {
+        rows.push({ proto: "DMARC", res: auth.dmarc_result || "none", domain: auth.dmarc_domain || "-", details: auth.dmarc_details || "-" });
+      }
+
+      // ARC
+      if (auth.arc) {
+        rows.push({
+          proto: "ARC",
+          res: auth.arc.is_valid ? "pass" : (auth.arc.arc_seal_status || "none"),
+          domain: auth.arc.instance_count ? `${auth.arc.instance_count} hop(s)` : "-",
+          details: auth.arc.details || `Seal: ${auth.arc.arc_seal_status || 'none'}, Valid: ${auth.arc.is_valid}`
+        });
+      } else {
+        rows.push({ proto: "ARC", res: auth.arc_result || "none", domain: "-", details: auth.arc_details || "-" });
+      }
 
       rows.forEach(r => {
         const tr = document.createElement('tr');
-        const badgeClass = r.res === 'pass' ? 'auth-pass' : (r.res === 'fail' ? 'auth-fail' : 'auth-none');
+        const badgeClass = (r.res || '').toLowerCase() === 'pass' ? 'auth-pass' : ((r.res || '').toLowerCase().includes('fail') ? 'auth-fail' : 'auth-none');
         tr.innerHTML = `
           <td><strong>${r.proto}</strong></td>
           <td><span class="auth-badge ${badgeClass}">${(r.res || 'NONE').toUpperCase()}</span></td>
@@ -525,7 +581,7 @@
           <td><code>${h.from_ip || '-'}</code><br><small style="color:var(--text-muted)">${h.from_host || ''}</small></td>
           <td>${h.by_host || '-'}</td>
           <td>${geoStr} <br><small style="color:var(--text-muted)">ASN: ${net.asn || 'N/A'}</small></td>
-          <td>${h.delay_seconds !== null ? h.delay_seconds + 's' : '-'}</td>
+          <td>${h.delay_seconds !== null && h.delay_seconds !== undefined ? h.delay_seconds + 's' : '-'}</td>
           <td>${(h.threat_tags || []).join(", ") || '<span style="color:var(--accent-emerald)">Clean</span>'}</td>
         `;
         tbody.appendChild(tr);
@@ -551,39 +607,58 @@
     function renderUrlsTab(urlReport) {
       const tbody = document.getElementById('urls-table-body');
       tbody.innerHTML = "";
-      if (!urlReport || !urlReport.extracted_urls || urlReport.extracted_urls.length === 0) {
+      const urls = (urlReport && urlReport.extracted_urls) ? urlReport.extracted_urls : [];
+      if (urls.length === 0) {
         tbody.innerHTML = "<tr><td colspan='4'>No hyperlinks extracted from message.</td></tr>";
         return;
       }
 
-      urlReport.extracted_urls.forEach(u => {
+      urls.forEach(u => {
         const tr = document.createElement('tr');
+        const flags = [];
+        if (u.is_punycode) flags.push("Punycode");
+        if (u.is_homograph) flags.push("Homograph/Typosquat");
+        if (u.is_suspicious_tld) flags.push("Suspicious TLD");
+        if (u.ip_in_url) flags.push("IP in Host");
+        if (u.threat_flags && u.threat_flags.length > 0) flags.push(...u.threat_flags);
+
         tr.innerHTML = `
-          <td><code>${u.defanged_url || u.raw_url}</code></td>
+          <td><code>${u.defanged_url || u.url || '-'}</code></td>
           <td>${u.domain || '-'}</td>
           <td><strong>${u.risk_score || 0}</strong> / 100</td>
-          <td>${(u.threat_flags || []).join(", ") || 'None'}</td>
+          <td>${flags.length > 0 ? flags.join(", ") : '<span style="color:var(--accent-emerald)">Clean</span>'}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function renderAttachmentsTab(attReport) {
+    function renderAttachmentsTab(attReport, rawAttachments) {
       const tbody = document.getElementById('attachments-table-body');
       tbody.innerHTML = "";
-      if (!attReport || !attReport.scanned_attachments || attReport.scanned_attachments.length === 0) {
+      
+      const analyses = (attReport && attReport.attachment_analyses) ? attReport.attachment_analyses : [];
+      const items = analyses.length > 0 ? analyses : (rawAttachments || []);
+
+      if (items.length === 0) {
         tbody.innerHTML = "<tr><td colspan='5'>No attachments present in evidence.</td></tr>";
         return;
       }
 
-      attReport.scanned_attachments.forEach(a => {
+      items.forEach(item => {
         const tr = document.createElement('tr');
+        const meta = item.attachment || item;
+        const fn = meta.filename || "unnamed_attachment";
+        const mime = (item.file_type_inspection ? item.file_type_inspection.detected_mime_type : null) || meta.detected_mime_type || meta.declared_mime_type || meta.content_type || "-";
+        const size = meta.size_bytes ? (meta.size_bytes / 1024).toFixed(1) + " KB" : "-";
+        const sha = (meta.hashes ? meta.hashes.sha256 : null) || meta.sha256_hash || "-";
+        const findings = (item.flags && item.flags.length > 0) ? item.flags.join(", ") : (item.threat_level || '<span style="color:var(--accent-emerald)">Clean</span>');
+
         tr.innerHTML = `
-          <td><strong>${a.filename}</strong></td>
-          <td>${a.detected_mime_type || a.declared_mime_type || '-'}</td>
-          <td>${(a.size_bytes / 1024).toFixed(1)} KB</td>
-          <td><code style="font-size:0.75rem">${a.sha256_hash || '-'}</code></td>
-          <td>${(a.threat_indicators || []).join(", ") || '<span style="color:var(--accent-emerald)">Clean</span>'}</td>
+          <td><strong>${fn}</strong></td>
+          <td>${mime}</td>
+          <td>${size}</td>
+          <td><code style="font-size:0.75rem">${sha}</code></td>
+          <td>${findings}</td>
         `;
         tbody.appendChild(tr);
       });
