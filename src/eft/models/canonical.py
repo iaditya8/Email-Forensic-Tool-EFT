@@ -155,6 +155,32 @@ class IsolatedBodyArtifacts(BaseModel):
     rtf_bodies: List[IsolatedBody] = Field(default_factory=list)
 
 
+class IPNetworkIntelligence(BaseModel):
+    """Forensic network intelligence, ASN, GeoIP, and infrastructure classification for an IP."""
+
+    ip: str
+    country: Optional[str] = None
+    country_code: Optional[str] = None
+    city: Optional[str] = None
+    region: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    asn: Optional[int] = None
+    as_org: Optional[str] = None
+    isp: Optional[str] = None
+    is_cloud_provider: bool = False
+    cloud_provider_name: Optional[str] = None
+    is_tor_exit_node: bool = False
+    is_vpn: bool = False
+    is_proxy: bool = False
+    is_private: bool = False
+    reverse_dns: Optional[str] = None
+    threat_tags: List[str] = Field(
+        default_factory=list,
+        description="Forensic intelligence flags (e.g., 'TOR_EXIT_NODE', 'COMMERCIAL_VPN', 'HYPERSCALER_AWS')",
+    )
+
+
 class RelayHop(BaseModel):
     """Forensic representation of a single Mail Transfer Agent (MTA) transmission hop."""
 
@@ -175,6 +201,10 @@ class RelayHop(BaseModel):
     delay_seconds: float = 0.0  # Transit time in seconds elapsed since previous hop
     is_private_ip: bool = False
     is_originating_hop: bool = False
+    network_intelligence: Optional[IPNetworkIntelligence] = Field(
+        default=None,
+        description="GeoIP, ASN, ISP, and hosting/threat classification for the sending IP",
+    )
     anomalies: List[str] = Field(
         default_factory=list,
         description="Forensic anomalies detected at this hop (negative delay, private IP in external hop, etc.)",
@@ -188,6 +218,10 @@ class TransitRoute(BaseModel):
     total_transit_seconds: float = 0.0
     originating_ip: Optional[str] = None
     originating_host: Optional[str] = None
+    originating_ip_intelligence: Optional[IPNetworkIntelligence] = Field(
+        default=None,
+        description="GeoIP, ASN, ISP, and hosting/threat classification for the originating IP",
+    )
     hops: List[RelayHop] = Field(
         default_factory=list,
         description="Chronologically ordered list of hops (Hop 1 = sender/origin -> Hop N = recipient MTA)",
