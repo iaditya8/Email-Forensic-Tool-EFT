@@ -64,6 +64,7 @@ from eft.models.timeline import (
     TimelineEventType,
 )
 from eft.reporting.custody import ChainOfCustodyManager
+from eft.reporting.exporter import ForensicReportExporter
 from eft.reporting.timeline import TimelineGenerator
 
 __version__ = "0.1.0"
@@ -131,4 +132,5 @@ __all__ = [
     "TimelineAnomalyType",
     "TimelineEvent",
     "ForensicTimelineReport",
+    "ForensicReportExporter",
 ]
