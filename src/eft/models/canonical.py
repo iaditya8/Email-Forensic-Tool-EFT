@@ -45,6 +45,48 @@ class AttachmentMetadata(BaseModel):
     )
 
 
+class FileTypeInspection(BaseModel):
+    """Deep file type inspection comparing declared file metadata against true magic bytes."""
+
+    declared_extension: str = ""
+    detected_extension: Optional[str] = None
+    declared_mime_type: str = "application/octet-stream"
+    detected_mime_type: Optional[str] = None
+    is_extension_mismatch: bool = False
+    is_mime_mismatch: bool = False
+    match_description: Optional[str] = None
+    risk_level: str = "BENIGN"  # BENIGN, LOW, MEDIUM, HIGH, CRITICAL
+    risk_reasons: List[str] = Field(default_factory=list)
+
+
+class ExtractedAttachment(BaseModel):
+    """Fully extracted, isolated, and cryptographically fingerprinted forensic attachment artifact."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    attachment_index: int = 0
+    filename: str
+    safe_filename: str
+    saved_path: Optional[str] = None
+    size_bytes: int = 0
+    content_type: str = "application/octet-stream"
+    content_id: Optional[str] = None
+    content_disposition: Optional[str] = None
+    is_inline: bool = False
+    hashes: Dict[str, str] = Field(
+        default_factory=dict,
+        description="Cryptographic multi-hashes (md5, sha1, sha256) of extracted payload",
+    )
+    file_type_inspection: FileTypeInspection = Field(
+        default_factory=FileTypeInspection,
+        description="Magic byte inspection and spoofing risk analysis",
+    )
+    extracted_timestamp_utc: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when forensic extraction occurred",
+    )
+
+
 class MIMEPartNode(BaseModel):
     """Represents a structural node in the MIME hierarchy tree."""
 
@@ -151,13 +193,15 @@ class CanonicalEmail(BaseModel):
 
     # Extracted structures
     attachments: List[AttachmentMetadata] = Field(default_factory=list)
+    extracted_attachments: List[ExtractedAttachment] = Field(
+        default_factory=list,
+        description="Forensically extracted, sanitized, and fingerprinted attachments",
+    )
     mime_parts: List[MIMEPartNode] = Field(default_factory=list)
 
     # Forensic lineage & provenance
     source_file: Optional[SourceFileInfo] = None
-    ingestion_timestamp_utc: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    ingestion_timestamp_utc: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     parsing_diagnostics: List[str] = Field(
         default_factory=list,
         description="Diagnostic logs, non-fatal anomalies, and warnings recorded during ingestion",

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import io
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
     import extract_msg
@@ -69,9 +69,7 @@ class MSGParser(BaseEmailParser):
                 except Exception:
                     pass
 
-    def _convert_to_canonical(
-        self, msg: extract_msg.Message, source_info: SourceFileInfo
-    ) -> CanonicalEmail:
+    def _convert_to_canonical(self, msg: Any, source_info: SourceFileInfo) -> CanonicalEmail:
         diagnostics: List[str] = []
 
         # Header parsing
@@ -253,7 +251,7 @@ class MSGParser(BaseEmailParser):
         )
 
     def _extract_headers(
-        self, msg: extract_msg.Message
+        self, msg: Any
     ) -> Tuple[List[Tuple[str, str]], Dict[str, Union[str, List[str]]]]:
         ordered: List[Tuple[str, str]] = []
         headers_dict: Dict[str, List[str]] = {}

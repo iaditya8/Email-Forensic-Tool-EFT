@@ -35,9 +35,7 @@ class EMLParser(BaseEmailParser):
             raise CorruptFileError(f"Target email file is empty: {source_info.file_name}")
 
         try:
-            msg: EmailMessage = email.message_from_bytes(
-                raw_bytes, policy=policy.default
-            )
+            msg: EmailMessage = email.message_from_bytes(raw_bytes, policy=policy.default)
         except Exception as e:
             raise CorruptFileError(
                 f"Failed to parse MIME structure for {source_info.file_name}: {e}"
