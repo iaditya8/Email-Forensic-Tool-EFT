@@ -7,13 +7,31 @@ from eft.ingestion.header_decomposer import HeaderDecomposer
 
 def test_header_decomposer_categorization():
     ordered_headers = [
-        ("Received", "from mail-out.sender.com (mail-out.sender.com [192.0.2.1]) by mx.google.com with ESMTPS"),
+        (
+            "Received",
+            "from mail-out.sender.com (mail-out.sender.com [192.0.2.1]) by mx.google.com with ESMTPS",
+        ),
         ("Received", "from internal.corp ([10.0.0.5]) by mail-out.sender.com with ESMTP"),
-        ("DKIM-Signature", "v=1; a=rsa-sha256; c=relaxed/relaxed; d=sender.com; s=202601; h=from:to:subject; bh=xyz; b=abc"),
-        ("Authentication-Results", "mx.google.com; dkim=pass header.i=@sender.com; spf=pass (google.com: domain of sender@sender.com designates 192.0.2.1 as permitted sender)"),
-        ("Received-SPF", "pass (google.com: domain of sender@sender.com designates 192.0.2.1 as permitted sender) client-ip=192.0.2.1;"),
-        ("ARC-Seal", "i=1; a=rsa-sha256; t=1700000000; cv=none; d=google.com; s=arc2026; b=arcseal1"),
-        ("ARC-Message-Signature", "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc2026; bh=xyz; b=arcsig1"),
+        (
+            "DKIM-Signature",
+            "v=1; a=rsa-sha256; c=relaxed/relaxed; d=sender.com; s=202601; h=from:to:subject; bh=xyz; b=abc",
+        ),
+        (
+            "Authentication-Results",
+            "mx.google.com; dkim=pass header.i=@sender.com; spf=pass (google.com: domain of sender@sender.com designates 192.0.2.1 as permitted sender)",
+        ),
+        (
+            "Received-SPF",
+            "pass (google.com: domain of sender@sender.com designates 192.0.2.1 as permitted sender) client-ip=192.0.2.1;",
+        ),
+        (
+            "ARC-Seal",
+            "i=1; a=rsa-sha256; t=1700000000; cv=none; d=google.com; s=arc2026; b=arcseal1",
+        ),
+        (
+            "ARC-Message-Signature",
+            "i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc2026; bh=xyz; b=arcsig1",
+        ),
         ("ARC-Authentication-Results", "i=1; mx.google.com; dkim=pass; spf=pass"),
         ("X-Originating-IP", "[203.0.113.50]"),
         ("X-Mailer", "ForensicTestClient/1.0"),

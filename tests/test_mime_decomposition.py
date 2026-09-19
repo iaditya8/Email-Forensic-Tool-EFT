@@ -141,7 +141,9 @@ def test_eml_parser_end_to_end_mime_and_header_decomposition(nested_mime_raw: by
 
     # Verify header decomposition presence
     assert canonical.header_decomposition is not None
-    assert canonical.header_decomposition.standard_headers["subject"] == "Nested MIME Phishing Attack"
+    assert (
+        canonical.header_decomposition.standard_headers["subject"] == "Nested MIME Phishing Attack"
+    )
     assert canonical.header_decomposition.standard_headers["from"] == "attacker@evil.corp"
 
     # Verify body artifacts presence
