@@ -57,7 +57,14 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.timeline import (
+    ForensicTimelineReport,
+    TimelineAnomalyType,
+    TimelineEvent,
+    TimelineEventType,
+)
 from eft.reporting.custody import ChainOfCustodyManager
+from eft.reporting.timeline import TimelineGenerator
 
 __version__ = "0.1.0"
 
@@ -119,4 +126,9 @@ __all__ = [
     "EvidenceManifest",
     "CustodyEvent",
     "EvidenceLedger",
+    "TimelineGenerator",
+    "TimelineEventType",
+    "TimelineAnomalyType",
+    "TimelineEvent",
+    "ForensicTimelineReport",
 ]
