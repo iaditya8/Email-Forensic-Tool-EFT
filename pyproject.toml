@@ -25,6 +25,9 @@ dependencies = [
     "stix2>=3.0.1",
 ]
 
+[project.scripts]
+eft = "eft.cli.main:app"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
