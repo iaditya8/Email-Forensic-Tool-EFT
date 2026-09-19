@@ -232,6 +232,77 @@ class TransitRoute(BaseModel):
     )
 
 
+class SPFResult(BaseModel):
+    """Forensic evaluation of Sender Policy Framework (SPF) validation and envelope alignment."""
+
+    status: str = "none"  # pass, fail, softfail, neutral, none, temperror, permerror
+    sender_ip: Optional[str] = None
+    mail_from_domain: Optional[str] = None
+    helo_domain: Optional[str] = None
+    is_aligned: bool = False
+    alignment_mode: str = "relaxed"  # relaxed, strict
+    details: Optional[str] = None
+
+
+class DKIMSignatureArtifact(BaseModel):
+    """Decomposed DKIM signature parameters, cryptographic header tags, and verification status."""
+
+    domain: str = ""  # d= tag
+    selector: str = ""  # s= tag
+    algorithm: str = "rsa-sha256"  # a= tag
+    canonicalization: Optional[str] = None  # c= tag (e.g. relaxed/relaxed)
+    body_hash: Optional[str] = None  # bh= tag
+    signature_data: Optional[str] = None  # b= tag
+    signed_headers: List[str] = Field(default_factory=list)  # h= tag
+    status: str = "none"  # pass, fail, none, neutral, temperror, permerror
+    is_aligned: bool = False
+    alignment_mode: str = "relaxed"  # relaxed, strict
+    timestamp_signed: Optional[datetime] = None  # t= tag
+    expiration: Optional[datetime] = None  # x= tag
+    details: Optional[str] = None
+
+
+class DMARCResult(BaseModel):
+    """Forensic evaluation of DMARC policy, identifier alignment, and enforcement disposition."""
+
+    status: str = "none"  # pass, fail, none, temperror, permerror
+    policy: str = "none"  # none, quarantine, reject, none_found
+    subdomain_policy: Optional[str] = None
+    spf_alignment: bool = False
+    dkim_alignment: bool = False
+    header_from_domain: str = ""
+    percentage: int = 100
+    disposition: str = "none"  # none, quarantine, reject
+    details: Optional[str] = None
+
+
+class ARCChain(BaseModel):
+    """Authenticated Received Chain (ARC) validation state across forwarders and intermediaries."""
+
+    arc_seal_status: str = "none"  # pass, fail, none
+    arc_message_signature_status: str = "none"  # pass, fail, none
+    arc_auth_results_status: str = "none"  # pass, fail, none
+    instance_count: int = 0
+    is_valid: bool = False
+    details: Optional[str] = None
+
+
+class EmailAuthenticationReport(BaseModel):
+    """Comprehensive multi-protocol email authentication analysis report."""
+
+    overall_verdict: str = "INSUFFICIENT_DATA"  # PASS, FAIL, SUSPICIOUS, NEUTRAL, INSUFFICIENT_DATA
+    verdict_summary: str = ""
+    spf: Optional[SPFResult] = None
+    dkim_signatures: List[DKIMSignatureArtifact] = Field(default_factory=list)
+    dmarc: Optional[DMARCResult] = None
+    arc: Optional[ARCChain] = None
+    auth_results_raw: List[str] = Field(default_factory=list)
+    authentication_flags: List[str] = Field(
+        default_factory=list,
+        description="Forensic authentication alert flags (e.g. 'SPOOFING_CRITICAL_DMARC_FAILED', 'SPF_ALIGNMENT_MISMATCH')",
+    )
+
+
 class CanonicalEmail(BaseModel):
     """Normalized, court-defensible representation of an ingested email."""
 
@@ -261,6 +332,10 @@ class CanonicalEmail(BaseModel):
     transit_route: Optional[TransitRoute] = Field(
         default=None,
         description="Reconstructed chronological MTA transit hops, delays, and originating IP",
+    )
+    authentication_report: Optional[EmailAuthenticationReport] = Field(
+        default=None,
+        description="Comprehensive forensic evaluation of SPF, DKIM, DMARC, and ARC authentication",
     )
 
     # Message bodies
