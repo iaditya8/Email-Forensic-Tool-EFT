@@ -93,8 +93,18 @@ class ForensicReportExporter:
         Returns:
             JSON-formatted string representation.
         """
-        data = email_obj.model_dump(mode="json")
-        json_str = json.dumps(data, indent=indent, default=str)
+        import base64
+
+        data = email_obj.model_dump(mode="python")
+
+        def _json_serial(obj: Any) -> Any:
+            if isinstance(obj, bytes):
+                return base64.b64encode(obj).decode("ascii")
+            if isinstance(obj, (datetime, Path)):
+                return obj.isoformat() if isinstance(obj, datetime) else str(obj)
+            return str(obj)
+
+        json_str = json.dumps(data, indent=indent, default=_json_serial)
 
         if output_path:
             out = Path(output_path)
@@ -339,11 +349,13 @@ class ForensicReportExporter:
                 stix_objects.append(to_email)
 
         # 2. EmailMessage Cyber Observable
+        is_multi = len(email_obj.mime_parts) > 1
         email_kwargs: Dict[str, Any] = {
-            "is_multipart": bool(email_obj.mime_parts),
+            "is_multipart": is_multi,
             "subject": email_obj.subject or "(No Subject)",
-            "body": (email_obj.body_plain or email_obj.body_html or "")[:4000],
         }
+        if not is_multi:
+            email_kwargs["body"] = (email_obj.body_plain or email_obj.body_html or "")[:4000]
         if from_ref:
             email_kwargs["from_ref"] = from_ref.id
         if to_refs:

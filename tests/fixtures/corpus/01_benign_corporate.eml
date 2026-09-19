@@ -1,0 +1,68 @@
+Delivered-To: victim@company.com
+Received: by 2002:a05:6512:1234:: with SMTP id abc1234;
+        Mon, 15 Jan 2024 09:00:05 +0000 (UTC)
+Received: from mail.trusted-partner.com (mail.trusted-partner.com. [198.51.100.10])
+        by mx.google.com with ESMTPS id xyz789
+        for <victim@company.com>
+        (version=TLS1_3 cipher=TLS_AES_256_GCM_SHA384);
+        Mon, 15 Jan 2024 09:00:03 +0000 (UTC)
+Received-SPF: pass (google.com: domain of info@trusted-partner.com designates 198.51.100.10 as permitted sender) client-ip=198.51.100.10;
+Authentication-Results: mx.google.com;
+       dkim=pass header.i=@trusted-partner.com header.s=202401 header.b=AbCdEfGh;
+       spf=pass (google.com: domain of info@trusted-partner.com designates 198.51.100.10 as permitted sender) smtp.mailfrom=info@trusted-partner.com;
+       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=trusted-partner.com
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=trusted-partner.com; s=202401;
+        t=1705309200; bh=47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU=;
+        h=From:To:Subject:Date:Message-ID:MIME-Version:Content-Type;
+        b=AbCdEfGhIjKlMnOpQrStUvWxYz0123456789==
+From: "Partner Support" <info@trusted-partner.com>
+To: "Alex Analyst" <victim@company.com>
+Subject: Q1 Security Vendor SLA Agreement
+Date: Mon, 15 Jan 2024 09:00:00 +0000
+Message-ID: <20240115090000.12345@trusted-partner.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="----=_Part_12345_67890"
+
+------=_Part_12345_67890
+Content-Type: multipart/alternative; boundary="----=_Part_12345_67891"
+
+------=_Part_12345_67891
+Content-Type: text/plain; charset=UTF-8
+
+Hello Alex,
+
+Please find attached the finalized Q1 Security Vendor SLA Agreement for your review and records.
+Let us know if you need any adjustments.
+
+Best regards,
+Trusted Partner Team
+
+------=_Part_12345_67891
+Content-Type: text/html; charset=UTF-8
+
+<html>
+<head><title>SLA Agreement</title></head>
+<body>
+<p>Hello Alex,</p>
+<p>Please find attached the finalized <b>Q1 Security Vendor SLA Agreement</b> for your review and records.</p>
+<p>Let us know if you need any adjustments.</p>
+<br>
+<p>Best regards,<br><b>Trusted Partner Team</b></p>
+</body>
+</html>
+
+------=_Part_12345_67891--
+
+------=_Part_12345_67890
+Content-Type: application/pdf; name="Q1_SLA_Agreement.pdf"
+Content-Disposition: attachment; filename="Q1_SLA_Agreement.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKJcTl8uXrCjEgMCBvYmoKPDwgL1R5cGUgL0NhdGFsb2cgL1BhZ2VzIDIgMCBSID4+
+CmVuZG9iagoyIDAgb2JqCjw8IC9UeXBlIC9QYWdlcyAvS2lkcyBbMyAwIFJdIC9Db3VudCAxID4+
+CmVuZG9iagozIDAgb2JqCjw8IC9UeXBlIC9QYWdlIC9QYXJlbnQgMiAwIFIgL01lZGlhQm94IFsw
+IDAgNjEyIDc5Ml0gL0NvbnRlbnRzIDQgMCBSID4+CmVuZG9iagp4cmVmCjAgNQowMDAwMDAwMDAw
+IDY1NTM1IGYgCjAwMDAwMDAwMTUgMDAwMDAgbiAKMDAwMDAwMDA2OCAwMDAwMCBuIAowMDAwMDAw
+MTI1IDAwMDAwIG4gCnRyYWlsZXIKPDwgL1NpemUgNSA+PgpzdGFydHhyZWYKMTgwCiUlRU9GCg==
+
+------=_Part_12345_67890--

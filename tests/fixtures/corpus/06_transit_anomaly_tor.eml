@@ -1,0 +1,20 @@
+Delivered-To: admin@company-mail.com
+Received: from mx.recipient-relay.net (mx.recipient-relay.net. [203.0.113.100])
+        by mail.company-mail.com with SMTP id hop3;
+        Sat, 20 Jan 2024 09:59:58 +0000 (UTC)
+Received: from relay.intermediate-transit.org (relay.intermediate-transit.org. [198.51.100.50])
+        by mx.recipient-relay.net with ESMTP id hop2;
+        Sat, 20 Jan 2024 10:00:05 +0000 (UTC)
+Received: from tor-exit-5.torservers.net ([185.220.101.5])
+        by relay.intermediate-transit.org with ESMTPS id hop1;
+        Sat, 20 Jan 2024 10:00:00 +0000 (UTC)
+From: "Anonymous Whistleblower" <whistleblower@protonmail.ch>
+To: <admin@company-mail.com>
+Subject: Notice of Regulatory Disclosure
+Date: Sat, 20 Jan 2024 10:00:00 +0000
+Message-ID: <tor-transit-anomaly-20240120@protonmail.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Please review the public regulatory filing documents.
+Transported via onion routing relays.
