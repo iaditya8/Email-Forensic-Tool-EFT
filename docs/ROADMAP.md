@@ -163,3 +163,37 @@ This document serves as the master source for creating GitHub Issues and trackin
 * **Done when:**
   - [ ] Composite risk score is calculated and displayed with color-coded risk level (Low, Medium, High, Critical).
   - [ ] Breakdown explains exactly which factors contributed to the score.
+
+---
+
+## Epic 6 (Phase 6 / v1.1.0): Domain & Email Address OSINT Inspector
+
+### Task 6.1: Standalone Domain & Email OSINT Intelligence Engine
+* **What needs to be built, and why:**
+  * Build a dedicated analyzer `DomainOSINTAnalyzer` that accepts raw email addresses (e.g., `user@domain.com`) or domain strings without requiring an ingested `.eml`/`.msg` file.
+  * Evaluates DNS MX records, SPF (`v=spf1`) presence/strictness, DMARC (`v=DMARC1; p=reject|quarantine|none`) policy enforcement, DKIM selector discovery, and BIMI records.
+  * Integrates IDN/Homoglyph transliteration, typosquatting Levenshtein distance against protected brand watchlists, and disposable/temporary email provider catalogs.
+  * *Why:* Enables SOC analysts and investigators to perform fast pre-triage, verify lookalike domains, and check domain authentication posture before receiving full headers.
+* **Done when:**
+  - [ ] `DomainOSINTAnalyzer` queries DNS (or offline cache) for MX, SPF, DMARC, and BIMI.
+  - [ ] Homoglyph and lookalike score calculated against `watchlist.json`.
+  - [ ] Disposable email provider detection returns true/false with provider classification.
+  - [ ] Outputs a structured `DomainOSINTReport` with a composite 0-100 reputation score.
+
+### Task 6.2: Unified CLI Lookup Command (`eft lookup` / `eft osint`)
+* **What needs to be built, and why:**
+  * Implement CLI command `eft lookup <email_or_domain>` with options `--json`, `--dns-timeout`, and `--offline`.
+  * *Why:* Provides rapid command-line triage for incident responders directly in their terminal.
+* **Done when:**
+  - [ ] `eft lookup user@example.com` outputs rich color-coded terminal tables for DNS, SPF/DMARC posture, and brand risk.
+  - [ ] Comprehensive automated tests cover CLI options and report formats.
+
+### Task 6.3: Web Dashboard Quick OSINT Inspector Tab
+* **What needs to be built, and why:**
+  * Add an interactive "OSINT & Domain Inspector" panel in the `eft serve` web dashboard with a search bar allowing analysts to paste any email address or domain.
+  * Visualizes DNS MX/SPF/DMARC security badges, disposable mail warnings, and lookalike brand comparison cards.
+  * *Why:* Delivers a complete, all-in-one workflow for both full-file forensic triage and rapid address reputation queries.
+* **Done when:**
+  - [ ] REST API endpoint `POST /api/osint/lookup` added to FastAPI router.
+  - [ ] Web dashboard includes a dedicated OSINT Inspector tab with real-time analysis results.
+
