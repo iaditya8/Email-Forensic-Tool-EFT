@@ -1,4 +1,5 @@
 from eft.analysis.auth_verifier import AuthenticationVerifier
+from eft.analysis.bec_detector import BECDetector
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.analysis.url_analyzer import URLAnalyzer
@@ -21,6 +22,8 @@ from eft.ingestion.msg_parser import MSGParser
 from eft.models.canonical import (
     ARCChain,
     AttachmentMetadata,
+    BECAnalysisReport,
+    BECIndicator,
     CanonicalEmail,
     DKIMSignatureArtifact,
     DMARCResult,
@@ -57,12 +60,15 @@ __all__ = [
     "NetworkIntelligenceService",
     "AuthenticationVerifier",
     "URLAnalyzer",
+    "BECDetector",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
     "ExtractedAttachment",
     "ExtractedURL",
     "URLExtractionReport",
+    "BECIndicator",
+    "BECAnalysisReport",
     "FileTypeInspection",
     "IPNetworkIntelligence",
     "SPFResult",

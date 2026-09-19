@@ -344,6 +344,35 @@ class URLExtractionReport(BaseModel):
     risk_flags: List[str] = Field(default_factory=list)
 
 
+class BECIndicator(BaseModel):
+    """Specific forensic indicator of Business Email Compromise or spoofing."""
+
+    indicator_type: str  # DISPLAY_NAME_SPOOF, COUSIN_DOMAIN_TYPOSQUAT, REPLY_TO_MISMATCH, etc.
+    severity: str = "MEDIUM"  # LOW, MEDIUM, HIGH, CRITICAL
+    description: str
+    observed_value: Optional[str] = None
+    expected_or_target_value: Optional[str] = None
+    confidence_score: float = 1.0  # 0.0 to 1.0
+
+
+class BECAnalysisReport(BaseModel):
+    """Forensic report detailing Business Email Compromise and social engineering spoofing analysis."""
+
+    is_bec_suspected: bool = False
+    overall_threat_level: str = "CLEAN"  # CLEAN, SUSPICIOUS, HIGH_RISK, CRITICAL_BEC
+    threat_score: float = 0.0  # 0.0 to 100.0
+    display_name_spoof_detected: bool = False
+    cousin_domain_detected: bool = False
+    reply_to_mismatch_detected: bool = False
+    impersonated_identity: Optional[str] = None
+    target_domain_simulated: Optional[str] = None
+    indicators: List[BECIndicator] = Field(default_factory=list)
+    flags: List[str] = Field(
+        default_factory=list,
+        description="BEC threat flags (e.g., 'VIP_IMPERSONATION', 'TYPOSQUAT_COUSIN_DOMAIN', 'SUSPICIOUS_REPLY_ROUTING')",
+    )
+
+
 class CanonicalEmail(BaseModel):
     """Normalized, court-defensible representation of an ingested email."""
 
@@ -381,6 +410,10 @@ class CanonicalEmail(BaseModel):
     url_report: Optional[URLExtractionReport] = Field(
         default=None,
         description="Forensic URL extraction, defanging, anchor mismatch, and homograph detection report",
+    )
+    bec_report: Optional[BECAnalysisReport] = Field(
+        default=None,
+        description="Business Email Compromise (BEC), display name spoofing, and cousin domain analysis report",
     )
 
     # Message bodies
