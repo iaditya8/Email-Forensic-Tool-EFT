@@ -1,3 +1,4 @@
+from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.core.exceptions import (
@@ -17,8 +18,12 @@ from eft.ingestion.mbox_parser import MBOXParser
 from eft.ingestion.mime_decomposer import MIMETreeDecomposer
 from eft.ingestion.msg_parser import MSGParser
 from eft.models.canonical import (
+    ARCChain,
     AttachmentMetadata,
     CanonicalEmail,
+    DKIMSignatureArtifact,
+    DMARCResult,
+    EmailAuthenticationReport,
     ExtractedAttachment,
     FileTypeInspection,
     HeaderDecomposition,
@@ -29,6 +34,7 @@ from eft.models.canonical import (
     MIMEPartNode,
     RelayHop,
     SourceFileInfo,
+    SPFResult,
     TransitRoute,
 )
 
@@ -46,12 +52,18 @@ __all__ = [
     "AttachmentExtractor",
     "RelayAnalyzer",
     "NetworkIntelligenceService",
+    "AuthenticationVerifier",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
     "ExtractedAttachment",
     "FileTypeInspection",
     "IPNetworkIntelligence",
+    "SPFResult",
+    "DKIMSignatureArtifact",
+    "DMARCResult",
+    "ARCChain",
+    "EmailAuthenticationReport",
     "MIMEPartNode",
     "HeaderDecomposition",
     "RelayHop",
