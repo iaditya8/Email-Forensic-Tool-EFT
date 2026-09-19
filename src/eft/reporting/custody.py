@@ -402,9 +402,25 @@ class ChainOfCustodyManager:
         Returns:
             Reconstructed EvidenceManifest instance.
         """
-        path = Path(source)
-        if path.is_file():
-            raw = path.read_text(encoding="utf-8")
+        if isinstance(source, Path):
+            raw = source.read_text(encoding="utf-8")
+        elif isinstance(source, str):
+            stripped = source.strip()
+            if (
+                (stripped.startswith("{") and stripped.endswith("}"))
+                or "\n" in source
+                or len(source) > 255
+            ):
+                raw = source
+            else:
+                try:
+                    p = Path(source)
+                    if p.is_file():
+                        raw = p.read_text(encoding="utf-8")
+                    else:
+                        raw = source
+                except OSError:
+                    raw = source
         else:
             raw = str(source)
         data = json.loads(raw)
@@ -420,9 +436,25 @@ class ChainOfCustodyManager:
         Returns:
             Reconstructed EvidenceLedger instance.
         """
-        path = Path(source)
-        if path.is_file():
-            raw = path.read_text(encoding="utf-8")
+        if isinstance(source, Path):
+            raw = source.read_text(encoding="utf-8")
+        elif isinstance(source, str):
+            stripped = source.strip()
+            if (
+                (stripped.startswith("{") and stripped.endswith("}"))
+                or "\n" in source
+                or len(source) > 255
+            ):
+                raw = source
+            else:
+                try:
+                    p = Path(source)
+                    if p.is_file():
+                        raw = p.read_text(encoding="utf-8")
+                    else:
+                        raw = source
+                except OSError:
+                    raw = source
         else:
             raw = str(source)
         data = json.loads(raw)
