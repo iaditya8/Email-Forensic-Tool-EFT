@@ -158,7 +158,8 @@
         </div>
       </div>
 
-      <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+      <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center;">
+        <button class="btn btn-secondary" id="reset-btn" onclick="resetSession()" style="display: none;">&#128465; New / Reset Investigation</button>
         <button class="btn" id="analyze-btn" onclick="executeAnalysis()">Run Forensic Triage & Scoring</button>
       </div>
     </section>
@@ -343,10 +344,19 @@
   <script>
     let currentEvidenceFile = null;
     let currentAnalysisData = null;
+    let currentSampleName = null;
 
     const dropzone = document.getElementById('dropzone');
     const fileInput = document.getElementById('file-input');
     const fileNameLabel = document.getElementById('file-name-label');
+    const resetBtn = document.getElementById('reset-btn');
+    const caseIdInput = document.getElementById('case-id');
+    const examinerInput = document.getElementById('examiner-name');
+    const sampleSelectInput = document.getElementById('sample-select');
+
+    // Auto-save case metadata changes
+    if (caseIdInput) caseIdInput.addEventListener('input', () => localStorage.setItem('eft_case_id', caseIdInput.value));
+    if (examinerInput) examinerInput.addEventListener('input', () => localStorage.setItem('eft_examiner_name', examinerInput.value));
 
     // Drag & Drop
     ['dragenter', 'dragover'].forEach(name => {
@@ -368,13 +378,27 @@
 
     function handleFileSelect(file) {
       currentEvidenceFile = file;
+      currentSampleName = null;
       fileNameLabel.innerHTML = `<strong>Selected Evidence:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
       document.getElementById('sample-select').value = "";
+    }
+
+    function resetSession() {
+      try {
+        localStorage.removeItem('eft_last_analysis');
+        localStorage.removeItem('eft_last_sample');
+        localStorage.removeItem('eft_active_tab');
+      } catch (e) {}
+      currentEvidenceFile = null;
+      currentAnalysisData = null;
+      currentSampleName = null;
+      location.reload();
     }
 
     async function loadCorpusSample(sampleName) {
       if (!sampleName) return;
       currentEvidenceFile = null;
+      currentSampleName = sampleName;
       fileNameLabel.innerHTML = `<strong>Corpus Sample Selected:</strong> ${sampleName}`;
       document.getElementById('analyze-btn').innerText = "Analyzing Sample...";
       document.getElementById('analyze-btn').disabled = true;
@@ -383,7 +407,7 @@
         const res = await fetch(`/api/sample/${sampleName}`);
         if (!res.ok) throw new Error("Failed to load sample");
         const data = await res.json();
-        renderAnalysisResults(data);
+        renderAnalysisResults(data, sampleName, true);
       } catch (err) {
         alert("Error loading sample: " + err.message);
       } finally {
@@ -420,7 +444,7 @@
           throw new Error(err.detail || "Analysis failed");
         }
         const data = await res.json();
-        renderAnalysisResults(data);
+        renderAnalysisResults(data, null, true);
       } catch (err) {
         alert("Forensic Analysis Error: " + err.message);
       } finally {
@@ -429,10 +453,27 @@
       }
     }
 
-    function renderAnalysisResults(data) {
+    function renderAnalysisResults(data, sampleName = null, shouldSave = true) {
       currentAnalysisData = data;
       const email = data.email || data;
       const risk = data.risk_report || {};
+
+      if (shouldSave) {
+        try {
+          localStorage.setItem('eft_last_analysis', JSON.stringify(data));
+          if (sampleName) {
+            localStorage.setItem('eft_last_sample', sampleName);
+          } else {
+            localStorage.removeItem('eft_last_sample');
+          }
+          if (caseIdInput) localStorage.setItem('eft_case_id', caseIdInput.value);
+          if (examinerInput) localStorage.setItem('eft_examiner_name', examinerInput.value);
+        } catch (e) {
+          console.warn("Could not save session to localStorage", e);
+        }
+      }
+
+      if (resetBtn) resetBtn.style.display = 'inline-block';
 
       document.getElementById('results-section').style.display = 'flex';
 
@@ -720,8 +761,15 @@
     function switchTab(tabId) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      event.target.classList.add('active');
-      document.getElementById('tab-' + tabId).classList.add('active');
+      
+      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
+      if (targetBtn) targetBtn.classList.add('active');
+      const targetContent = document.getElementById('tab-' + tabId);
+      if (targetContent) targetContent.classList.add('active');
+      
+      try {
+        localStorage.setItem('eft_active_tab', tabId);
+      } catch (e) {}
     }
 
     async function exportReport(format) {
@@ -746,6 +794,40 @@
         alert("Export Error: " + err.message);
       }
     }
+
+    // Auto-restore session state on page load / refresh
+    window.addEventListener('DOMContentLoaded', () => {
+      // 1. Restore Case & Examiner Metadata
+      try {
+        const savedCaseId = localStorage.getItem('eft_case_id');
+        if (savedCaseId && caseIdInput) caseIdInput.value = savedCaseId;
+        const savedExaminer = localStorage.getItem('eft_examiner_name');
+        if (savedExaminer && examinerInput) examinerInput.value = savedExaminer;
+      } catch (e) {}
+
+      // 2. Restore Last Analysis Data
+      try {
+        const savedAnalysis = localStorage.getItem('eft_last_analysis');
+        const savedSample = localStorage.getItem('eft_last_sample');
+        if (savedAnalysis) {
+          const parsed = JSON.parse(savedAnalysis);
+          if (savedSample && sampleSelectInput) {
+            sampleSelectInput.value = savedSample;
+            fileNameLabel.innerHTML = `<strong>Restored Evidence:</strong> ${savedSample} <span style="color:var(--accent-cyan); font-size:0.75rem;">(Session Restored)</span>`;
+          } else {
+            const subj = parsed.email?.subject || parsed.subject || "Previous Evidence File";
+            fileNameLabel.innerHTML = `<strong>Restored Evidence:</strong> ${subj} <span style="color:var(--accent-cyan); font-size:0.75rem;">(Session Restored)</span>`;
+          }
+          renderAnalysisResults(parsed, savedSample, false);
+
+          // 3. Restore Active Tab
+          const savedTab = localStorage.getItem('eft_active_tab') || 'auth';
+          switchTab(savedTab);
+        }
+      } catch (e) {
+        console.error("Failed restoring saved forensic session", e);
+      }
+    });
   </script>
 </body>
 </html>
