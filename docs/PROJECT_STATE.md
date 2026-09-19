@@ -52,3 +52,14 @@
   - Dual-Pane Air-Gapped Email & Header Inspector UI with HTML Sanitizer
   - Interactive Hop & Transit Map Visualizer (Offline Vector World Map, Geodesic Arcs)
   - Composite Threat Scorer (0-100) & Risk Indicator Card (Speedometer Dial, Factor Trees)
+* **Step 1: Forensic Sample Corpus & Performance Benchmarking** — ✅ 100% COMPLETE & MERGED (`dev`) (PR #39)
+  - Realistic Corpus: Benign, Phishing Homoglyph, BEC Wire Fraud, Malware Double-Ext, Obfuscation Zero-Width, Transit Tor Anomaly, Mixed MBOX Archive.
+  - End-to-End Pipeline Integration Test Suite (`tests/test_corpus_integration.py`).
+  - Latency, Scalability, and Throughput Benchmarks (`tests/test_benchmarks.py`).
+
+---
+
+## 5. Next Steps (In Directed Order)
+1. ⏳ **Step 2: v1.0.0 Production Release & Merge into `main`**
+2. ⏳ **Step 3: Unified CLI Command-Line Suite (`eft`)**
+3. ⏳ **Step 4: Unified Air-Gapped Web Server (`eft serve`)**
