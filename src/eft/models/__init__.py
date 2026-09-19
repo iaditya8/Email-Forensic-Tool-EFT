@@ -10,6 +10,12 @@ from eft.models.canonical import (
     MIMEPartNode,
     SourceFileInfo,
 )
+from eft.models.custody import (
+    CustodyAction,
+    CustodyEvent,
+    EvidenceLedger,
+    EvidenceManifest,
+)
 
 __all__ = [
     "SourceFileInfo",
@@ -20,4 +26,8 @@ __all__ = [
     "IsolatedBodyArtifacts",
     "CanonicalEmail",
     "IngestionResult",
+    "CustodyAction",
+    "EvidenceManifest",
+    "CustodyEvent",
+    "EvidenceLedger",
 ]

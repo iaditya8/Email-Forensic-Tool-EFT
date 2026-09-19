@@ -51,8 +51,16 @@ from eft.models.canonical import (
     URLExtractionReport,
     YARAMatchArtifact,
 )
+from eft.models.custody import (
+    CustodyAction,
+    CustodyEvent,
+    EvidenceLedger,
+    EvidenceManifest,
+)
+from eft.reporting.custody import ChainOfCustodyManager
 
 __version__ = "0.1.0"
+
 
 __all__ = [
     "__version__",
@@ -106,4 +114,9 @@ __all__ = [
     "ForensicIngestionError",
     "compute_file_hashes",
     "compute_bytes_hashes",
+    "ChainOfCustodyManager",
+    "CustodyAction",
+    "EvidenceManifest",
+    "CustodyEvent",
+    "EvidenceLedger",
 ]
