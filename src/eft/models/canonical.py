@@ -49,14 +49,68 @@ class MIMEPartNode(BaseModel):
     """Represents a structural node in the MIME hierarchy tree."""
 
     part_index: int
+    part_path: str = "1"  # e.g., "1", "1.1", "1.2.1"
+    depth: int = 0
+    parent_path: Optional[str] = None
     content_type: str
     charset: Optional[str] = None
     content_transfer_encoding: Optional[str] = None
     content_disposition: Optional[str] = None
     content_id: Optional[str] = None
+    boundary: Optional[str] = None
     is_multipart: bool = False
+    is_attachment: bool = False
+    filename: Optional[str] = None
     size_bytes: int = 0
+    raw_headers: List[Tuple[str, str]] = Field(default_factory=list)
     children: List[MIMEPartNode] = Field(default_factory=list)
+
+
+class HeaderDecomposition(BaseModel):
+    """Decomposed, categorized view of all standard, routing, authentication, and custom headers."""
+
+    received_headers: List[str] = Field(
+        default_factory=list,
+        description="Ordered list of 'Received' transit headers in top-down appearance order",
+    )
+    auth_results_headers: List[str] = Field(
+        default_factory=list,
+        description="List of Authentication-Results and Received-SPF header values",
+    )
+    dkim_signatures: List[str] = Field(
+        default_factory=list,
+        description="List of DKIM-Signature header values",
+    )
+    arc_headers: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Dictionary of ARC-* headers (ARC-Seal, ARC-Message-Signature, ARC-Authentication-Results)",
+    )
+    custom_x_headers: Dict[str, Union[str, List[str]]] = Field(
+        default_factory=dict,
+        description="Dictionary of all custom non-standard X-* vendor and security headers",
+    )
+    standard_headers: Dict[str, Union[str, List[str]]] = Field(
+        default_factory=dict,
+        description="Dictionary of standard RFC 5322 core envelope headers",
+    )
+
+
+class IsolatedBody(BaseModel):
+    """Isolated and cryptographically fingerprinted body representation."""
+
+    content: str
+    content_type: str  # 'text/plain', 'text/html', 'text/rtf'
+    charset: Optional[str] = None
+    size_bytes: int = 0
+    sha256: str = ""
+
+
+class IsolatedBodyArtifacts(BaseModel):
+    """Container for isolated body artifacts partitioned by MIME type."""
+
+    plain_bodies: List[IsolatedBody] = Field(default_factory=list)
+    html_bodies: List[IsolatedBody] = Field(default_factory=list)
+    rtf_bodies: List[IsolatedBody] = Field(default_factory=list)
 
 
 class CanonicalEmail(BaseModel):
@@ -81,11 +135,19 @@ class CanonicalEmail(BaseModel):
         default_factory=list,
         description="Strictly ordered list of (header_name, header_value) preserving physical transit order",
     )
+    header_decomposition: Optional[HeaderDecomposition] = Field(
+        default=None,
+        description="Categorized header structures (Received, Auth, DKIM, ARC, X-*)",
+    )
 
     # Message bodies
     body_plain: Optional[str] = None
     body_html: Optional[str] = None
     body_rtf: Optional[str] = None
+    body_artifacts: Optional[IsolatedBodyArtifacts] = Field(
+        default=None,
+        description="Isolated body artifacts partitioned into structured streams with hashes",
+    )
 
     # Extracted structures
     attachments: List[AttachmentMetadata] = Field(default_factory=list)
