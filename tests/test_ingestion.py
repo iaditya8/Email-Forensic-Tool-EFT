@@ -59,8 +59,8 @@ def sample_multipart_eml() -> bytes:
         f"\r\n"
         f"<p>HTML incident summary with <b>alert</b>.</p>\r\n"
         f"--{boundary}\r\n"
-        f"Content-Type: application/pdf; name=\"report.pdf\"\r\n"
-        f"Content-Disposition: attachment; filename=\"report.pdf\"\r\n"
+        f'Content-Type: application/pdf; name="report.pdf"\r\n'
+        f'Content-Disposition: attachment; filename="report.pdf"\r\n'
         f"Content-Transfer-Encoding: base64\r\n"
         f"\r\n"
         f"JVBERi0xLjQKJcTl8uXr...\r\n"
@@ -94,7 +94,9 @@ def sample_mbox_content() -> bytes:
 # ---------------------------------------------------------------------------
 
 
-def test_eml_single_part_ingestion(tmp_path: Path, ingester: EmailIngester, sample_eml_content: bytes):
+def test_eml_single_part_ingestion(
+    tmp_path: Path, ingester: EmailIngester, sample_eml_content: bytes
+):
     eml_file = tmp_path / "test_sample.eml"
     eml_file.write_bytes(sample_eml_content)
 
@@ -122,7 +124,9 @@ def test_eml_single_part_ingestion(tmp_path: Path, ingester: EmailIngester, samp
     assert "sha256" in msg.source_file.hashes
 
 
-def test_eml_multipart_with_attachment(tmp_path: Path, ingester: EmailIngester, sample_multipart_eml: bytes):
+def test_eml_multipart_with_attachment(
+    tmp_path: Path, ingester: EmailIngester, sample_multipart_eml: bytes
+):
     eml_file = tmp_path / "incident.eml"
     eml_file.write_bytes(sample_multipart_eml)
 
@@ -170,7 +174,9 @@ def test_eml_latin1_encoding_fallback(tmp_path: Path, ingester: EmailIngester):
 # ---------------------------------------------------------------------------
 
 
-def test_mbox_multi_message_ingestion(tmp_path: Path, ingester: EmailIngester, sample_mbox_content: bytes):
+def test_mbox_multi_message_ingestion(
+    tmp_path: Path, ingester: EmailIngester, sample_mbox_content: bytes
+):
     mbox_file = tmp_path / "archive.mbox"
     mbox_file.write_bytes(sample_mbox_content)
 
@@ -220,22 +226,26 @@ def test_msg_parser_with_mock_and_attachments(tmp_path: Path, ingester: EmailIng
     mock_att.mimetype = "application/pdf"
     mock_att.cid = "cid_inv_1"
 
-    mock_msg_obj = type("MockMsg", (), {
-        "subject": "Outlook Invoice Attached",
-        "sender": "accounts@enterprise.corp",
-        "to": "billing@customer.com",
-        "cc": "audit@enterprise.corp",
-        "bcc": "hidden@enterprise.corp",
-        "date": "2026-09-19 14:00:00",
-        "messageId": "<msg-invoice-456@corp>",
-        "replyTo": "accounts-reply@enterprise.corp",
-        "body": "Please review invoice.",
-        "htmlBody": "<p>Please review invoice.</p>",
-        "rtfBody": b"{\\rtf1\\ansi Please review invoice.}",
-        "header": "From: accounts@enterprise.corp\nTo: billing@customer.com\nSubject: Invoice\n",
-        "attachments": [mock_att],
-        "close": lambda self: None,
-    })()
+    mock_msg_obj = type(
+        "MockMsg",
+        (),
+        {
+            "subject": "Outlook Invoice Attached",
+            "sender": "accounts@enterprise.corp",
+            "to": "billing@customer.com",
+            "cc": "audit@enterprise.corp",
+            "bcc": "hidden@enterprise.corp",
+            "date": "2026-09-19 14:00:00",
+            "messageId": "<msg-invoice-456@corp>",
+            "replyTo": "accounts-reply@enterprise.corp",
+            "body": "Please review invoice.",
+            "htmlBody": "<p>Please review invoice.</p>",
+            "rtfBody": b"{\\rtf1\\ansi Please review invoice.}",
+            "header": "From: accounts@enterprise.corp\nTo: billing@customer.com\nSubject: Invoice\n",
+            "attachments": [mock_att],
+            "close": lambda self: None,
+        },
+    )()
 
     with patch("extract_msg.openMsg", return_value=mock_msg_obj):
         result = ingester.ingest_file(msg_file)
@@ -271,7 +281,9 @@ def test_msg_parser_corrupt_file(tmp_path: Path, ingester: EmailIngester):
 # ---------------------------------------------------------------------------
 
 
-def test_tamper_detection_raises_exception(tmp_path: Path, ingester: EmailIngester, sample_eml_content: bytes):
+def test_tamper_detection_raises_exception(
+    tmp_path: Path, ingester: EmailIngester, sample_eml_content: bytes
+):
     eml_file = tmp_path / "tamper_target.eml"
     eml_file.write_bytes(sample_eml_content)
 
@@ -295,7 +307,9 @@ def test_tamper_detection_raises_exception(tmp_path: Path, ingester: EmailIngest
 # ---------------------------------------------------------------------------
 
 
-def test_auto_detection_eml_without_extension(tmp_path: Path, ingester: EmailIngester, sample_eml_content: bytes):
+def test_auto_detection_eml_without_extension(
+    tmp_path: Path, ingester: EmailIngester, sample_eml_content: bytes
+):
     no_ext = tmp_path / "evidence_eml_no_ext"
     no_ext.write_bytes(sample_eml_content)
 
@@ -308,22 +322,26 @@ def test_auto_detection_msg_without_extension(tmp_path: Path, ingester: EmailIng
     no_ext = tmp_path / "evidence_msg_no_ext"
     no_ext.write_bytes(OLE_MAGIC_HEADER + b"\x00" * 504)
 
-    mock_msg_obj = type("MockMsg", (), {
-        "subject": "Detected MSG",
-        "sender": "sender@test.com",
-        "to": "to@test.com",
-        "cc": None,
-        "bcc": None,
-        "date": None,
-        "messageId": None,
-        "replyTo": None,
-        "body": "Detected",
-        "htmlBody": None,
-        "rtfBody": None,
-        "header": None,
-        "attachments": [],
-        "close": lambda self: None,
-    })()
+    mock_msg_obj = type(
+        "MockMsg",
+        (),
+        {
+            "subject": "Detected MSG",
+            "sender": "sender@test.com",
+            "to": "to@test.com",
+            "cc": None,
+            "bcc": None,
+            "date": None,
+            "messageId": None,
+            "replyTo": None,
+            "body": "Detected",
+            "htmlBody": None,
+            "rtfBody": None,
+            "header": None,
+            "attachments": [],
+            "close": lambda self: None,
+        },
+    )()
 
     with patch("extract_msg.openMsg", return_value=mock_msg_obj):
         result = ingester.ingest_file(no_ext)
@@ -331,7 +349,9 @@ def test_auto_detection_msg_without_extension(tmp_path: Path, ingester: EmailIng
         assert result.source_file.file_format == "msg"
 
 
-def test_auto_detection_mbox_without_extension(tmp_path: Path, ingester: EmailIngester, sample_mbox_content: bytes):
+def test_auto_detection_mbox_without_extension(
+    tmp_path: Path, ingester: EmailIngester, sample_mbox_content: bytes
+):
     no_ext = tmp_path / "evidence_mbox_no_ext"
     no_ext.write_bytes(sample_mbox_content)
 

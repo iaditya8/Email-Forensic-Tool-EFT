@@ -102,9 +102,7 @@ class EmailIngester:
         except (CorruptFileError, UnsupportedFormatError, ForensicIngestionError):
             raise
         except Exception as e:
-            raise ForensicIngestionError(
-                f"Unexpected ingestion failure on {path.name}: {e}"
-            ) from e
+            raise ForensicIngestionError(f"Unexpected ingestion failure on {path.name}: {e}") from e
 
         # Step 3: Post-analysis tamper verification
         post_hashes = compute_file_hashes(path)
@@ -198,7 +196,15 @@ class EmailIngester:
 
         # Check for typical RFC 5322 headers
         sample_text = header_bytes[:512].decode("latin-1", errors="ignore").lower()
-        rfc_headers = ["received:", "from:", "to:", "subject:", "date:", "message-id:", "mime-version:"]
+        rfc_headers = [
+            "received:",
+            "from:",
+            "to:",
+            "subject:",
+            "date:",
+            "message-id:",
+            "mime-version:",
+        ]
         if any(h in sample_text for h in rfc_headers):
             return "eml"
 

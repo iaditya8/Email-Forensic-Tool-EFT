@@ -1,5 +1,3 @@
-"""Email Forensic Tool (EFT) - Enterprise DFIR & Authentication Analysis Suite."""
-
 from eft.core.exceptions import (
     CorruptFileError,
     EFTException,
@@ -8,15 +6,23 @@ from eft.core.exceptions import (
     UnsupportedFormatError,
 )
 from eft.core.integrity import compute_bytes_hashes, compute_file_hashes
+from eft.ingestion.attachment_extractor import AttachmentExtractor
 from eft.ingestion.base import BaseEmailParser
 from eft.ingestion.eml_parser import EMLParser
 from eft.ingestion.engine import EmailIngester
+from eft.ingestion.header_decomposer import HeaderDecomposer
 from eft.ingestion.mbox_parser import MBOXParser
+from eft.ingestion.mime_decomposer import MIMETreeDecomposer
 from eft.ingestion.msg_parser import MSGParser
 from eft.models.canonical import (
     AttachmentMetadata,
     CanonicalEmail,
+    ExtractedAttachment,
+    FileTypeInspection,
+    HeaderDecomposition,
     IngestionResult,
+    IsolatedBody,
+    IsolatedBodyArtifacts,
     MIMEPartNode,
     SourceFileInfo,
 )
@@ -30,10 +36,18 @@ __all__ = [
     "EMLParser",
     "MSGParser",
     "MBOXParser",
+    "HeaderDecomposer",
+    "MIMETreeDecomposer",
+    "AttachmentExtractor",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
+    "ExtractedAttachment",
+    "FileTypeInspection",
     "MIMEPartNode",
+    "HeaderDecomposition",
+    "IsolatedBody",
+    "IsolatedBodyArtifacts",
     "IngestionResult",
     "EFTException",
     "EvidenceTamperedException",

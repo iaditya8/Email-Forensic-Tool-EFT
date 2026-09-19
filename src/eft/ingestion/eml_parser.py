@@ -9,18 +9,20 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
 from eft.core.exceptions import CorruptFileError, ForensicIngestionError
-from eft.core.integrity import compute_bytes_hashes
 from eft.ingestion.base import BaseEmailParser
+from eft.ingestion.header_decomposer import HeaderDecomposer
+from eft.ingestion.mime_decomposer import MIMETreeDecomposer
 from eft.models.canonical import (
-    AttachmentMetadata,
     CanonicalEmail,
-    MIMEPartNode,
     SourceFileInfo,
 )
 
 
 class EMLParser(BaseEmailParser):
     """Parser for standard RFC 822 / 5322 (.eml) email files."""
+
+    def __init__(self) -> None:
+        self._mime_decomposer = MIMETreeDecomposer()
 
     def parse(
         self,
@@ -33,9 +35,7 @@ class EMLParser(BaseEmailParser):
             raise CorruptFileError(f"Target email file is empty: {source_info.file_name}")
 
         try:
-            msg: EmailMessage = email.message_from_bytes(
-                raw_bytes, policy=policy.default
-            )
+            msg: EmailMessage = email.message_from_bytes(raw_bytes, policy=policy.default)
         except Exception as e:
             raise CorruptFileError(
                 f"Failed to parse MIME structure for {source_info.file_name}: {e}"
@@ -47,7 +47,15 @@ class EMLParser(BaseEmailParser):
                 diagnostics.append(f"MIME defect: {defect.__class__.__name__} - {defect}")
 
         ordered_headers, headers_map = self._extract_headers(msg)
-        body_plain, body_html, attachments, mime_parts = self._extract_content(msg)
+        header_decomp = HeaderDecomposer.decompose(ordered_headers)
+
+        (
+            mime_parts,
+            body_artifacts,
+            attachments,
+            body_plain,
+            body_html,
+        ) = self._mime_decomposer.decompose(msg)
 
         canonical = CanonicalEmail(
             message_id=self._clean_header(msg.get("Message-ID")),
@@ -61,8 +69,10 @@ class EMLParser(BaseEmailParser):
             return_path=self._clean_header(msg.get("Return-Path")),
             headers=headers_map,
             ordered_headers=ordered_headers,
+            header_decomposition=header_decomp,
             body_plain=body_plain,
             body_html=body_html,
+            body_artifacts=body_artifacts,
             attachments=attachments,
             mime_parts=mime_parts,
             source_file=source_info,
@@ -113,7 +123,6 @@ class EMLParser(BaseEmailParser):
         raw = msg.get(header_name)
         if not raw:
             return []
-        # Support multiple headers or comma-separated addresses
         values = msg.get_all(header_name, [])
         addresses: List[str] = []
         for val in values:
@@ -122,102 +131,3 @@ class EMLParser(BaseEmailParser):
                 if part_clean:
                     addresses.append(part_clean)
         return addresses
-
-    def _extract_content(
-        self, msg: EmailMessage
-    ) -> Tuple[Optional[str], Optional[str], List[AttachmentMetadata], List[MIMEPartNode]]:
-        plain_parts: List[str] = []
-        html_parts: List[str] = []
-        attachments: List[AttachmentMetadata] = []
-        mime_nodes: List[MIMEPartNode] = []
-
-        part_idx = 0
-        for part in msg.walk():
-            part_idx += 1
-            content_type = part.get_content_type()
-            disposition = part.get_content_disposition()
-            filename = part.get_filename()
-            is_multipart = part.is_multipart()
-            charset = part.get_content_charset()
-            encoding = part.get("Content-Transfer-Encoding")
-            content_id = part.get("Content-ID")
-
-            raw_payload = b""
-            if not is_multipart:
-                try:
-                    payload = part.get_payload(decode=True)
-                    if isinstance(payload, bytes):
-                        raw_payload = payload
-                    elif isinstance(payload, str):
-                        raw_payload = payload.encode(charset or "utf-8", errors="replace")
-                except Exception:
-                    raw_payload = b""
-
-            node = MIMEPartNode(
-                part_index=part_idx,
-                content_type=content_type,
-                charset=charset,
-                content_transfer_encoding=encoding,
-                content_disposition=disposition,
-                content_id=content_id,
-                is_multipart=is_multipart,
-                size_bytes=len(raw_payload) if not is_multipart else 0,
-            )
-            mime_nodes.append(node)
-
-            if is_multipart:
-                continue
-
-            # Determine if attachment
-            is_attachment = (
-                disposition == "attachment"
-                or bool(filename)
-                or (
-                    content_type not in ["text/plain", "text/html"]
-                    and disposition != "inline"
-                )
-            )
-
-            if is_attachment:
-                safe_name = filename or f"attachment_{part_idx}.bin"
-                att_hashes = compute_bytes_hashes(raw_payload)
-                attachments.append(
-                    AttachmentMetadata(
-                        filename=safe_name,
-                        content_type=content_type,
-                        size_bytes=len(raw_payload),
-                        content_id=content_id,
-                        content_disposition=disposition,
-                        is_inline=(disposition == "inline"),
-                        hashes=att_hashes,
-                        raw_data=raw_payload,
-                    )
-                )
-            else:
-                text_content = self._decode_text_payload(raw_payload, charset)
-                if content_type == "text/plain":
-                    plain_parts.append(text_content)
-                elif content_type == "text/html":
-                    html_parts.append(text_content)
-
-        body_plain = "\n\n".join(plain_parts) if plain_parts else None
-        body_html = "\n\n".join(html_parts) if html_parts else None
-
-        return body_plain, body_html, attachments, mime_nodes
-
-    def _decode_text_payload(self, data: bytes, charset: Optional[str]) -> str:
-        if not data:
-            return ""
-
-        charsets_to_try = [charset] if charset else []
-        charsets_to_try.extend(["utf-8", "latin-1", "windows-1252", "iso-8859-1"])
-
-        for cs in charsets_to_try:
-            if not cs:
-                continue
-            try:
-                return data.decode(cs)
-            except (UnicodeDecodeError, LookupError):
-                continue
-
-        return data.decode("utf-8", errors="replace")

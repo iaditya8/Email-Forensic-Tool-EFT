@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import io
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
     import extract_msg
@@ -14,9 +15,12 @@ except ImportError:
 from eft.core.exceptions import CorruptFileError, ForensicIngestionError
 from eft.core.integrity import compute_bytes_hashes
 from eft.ingestion.base import BaseEmailParser
+from eft.ingestion.header_decomposer import HeaderDecomposer
 from eft.models.canonical import (
     AttachmentMetadata,
     CanonicalEmail,
+    IsolatedBody,
+    IsolatedBodyArtifacts,
     MIMEPartNode,
     SourceFileInfo,
 )
@@ -65,22 +69,35 @@ class MSGParser(BaseEmailParser):
                 except Exception:
                     pass
 
-    def _convert_to_canonical(
-        self, msg: extract_msg.Message, source_info: SourceFileInfo
-    ) -> CanonicalEmail:
+    def _convert_to_canonical(self, msg: Any, source_info: SourceFileInfo) -> CanonicalEmail:
         diagnostics: List[str] = []
 
         # Header parsing
         ordered_headers, headers_map = self._extract_headers(msg)
+        header_decomp = HeaderDecomposer.decompose(ordered_headers)
 
         # Body parsing
         body_plain: Optional[str] = None
         body_html: Optional[str] = None
         body_rtf: Optional[str] = None
 
+        plain_bodies: List[IsolatedBody] = []
+        html_bodies: List[IsolatedBody] = []
+        rtf_bodies: List[IsolatedBody] = []
+
         try:
             if msg.body:
                 body_plain = str(msg.body)
+                plain_bytes = body_plain.encode("utf-8")
+                plain_bodies.append(
+                    IsolatedBody(
+                        content=body_plain,
+                        content_type="text/plain",
+                        charset="utf-8",
+                        size_bytes=len(plain_bytes),
+                        sha256=hashlib.sha256(plain_bytes).hexdigest(),
+                    )
+                )
         except Exception as e:
             diagnostics.append(f"Failed to extract plaintext body: {e}")
 
@@ -91,6 +108,18 @@ class MSGParser(BaseEmailParser):
                     body_html = raw_html.decode("utf-8", errors="replace")
                 elif isinstance(raw_html, str):
                     body_html = raw_html
+
+                if body_html:
+                    html_bytes = body_html.encode("utf-8")
+                    html_bodies.append(
+                        IsolatedBody(
+                            content=body_html,
+                            content_type="text/html",
+                            charset="utf-8",
+                            size_bytes=len(html_bytes),
+                            sha256=hashlib.sha256(html_bytes).hexdigest(),
+                        )
+                    )
         except Exception as e:
             diagnostics.append(f"Failed to extract HTML body: {e}")
 
@@ -101,8 +130,26 @@ class MSGParser(BaseEmailParser):
                     body_rtf = raw_rtf.decode("utf-8", errors="replace")
                 elif isinstance(raw_rtf, str):
                     body_rtf = raw_rtf
+
+                if body_rtf:
+                    rtf_bytes = body_rtf.encode("utf-8")
+                    rtf_bodies.append(
+                        IsolatedBody(
+                            content=body_rtf,
+                            content_type="text/rtf",
+                            charset="utf-8",
+                            size_bytes=len(rtf_bytes),
+                            sha256=hashlib.sha256(rtf_bytes).hexdigest(),
+                        )
+                    )
         except Exception:
             pass
+
+        body_artifacts = IsolatedBodyArtifacts(
+            plain_bodies=plain_bodies,
+            html_bodies=html_bodies,
+            rtf_bodies=rtf_bodies,
+        )
 
         # Attachment parsing
         attachments: List[AttachmentMetadata] = []
@@ -124,7 +171,10 @@ class MSGParser(BaseEmailParser):
                 except Exception as e:
                     diagnostics.append(f"Could not read attachment {att_name} data: {e}")
 
-                att_mimetype = getattr(att, "mimetype", "application/octet-stream") or "application/octet-stream"
+                att_mimetype = (
+                    getattr(att, "mimetype", "application/octet-stream")
+                    or "application/octet-stream"
+                )
                 att_cid = getattr(att, "cid", None)
                 att_hashes = compute_bytes_hashes(att_data)
 
@@ -160,6 +210,8 @@ class MSGParser(BaseEmailParser):
             mime_parts.append(
                 MIMEPartNode(
                     part_index=1,
+                    part_path="1",
+                    depth=0,
                     content_type="text/plain",
                     size_bytes=len(body_plain.encode("utf-8")),
                 )
@@ -168,6 +220,8 @@ class MSGParser(BaseEmailParser):
             mime_parts.append(
                 MIMEPartNode(
                     part_index=2,
+                    part_path="2",
+                    depth=0,
                     content_type="text/html",
                     size_bytes=len(body_html.encode("utf-8")),
                 )
@@ -185,9 +239,11 @@ class MSGParser(BaseEmailParser):
             return_path=None,
             headers=headers_map,
             ordered_headers=ordered_headers,
+            header_decomposition=header_decomp,
             body_plain=body_plain,
             body_html=body_html,
             body_rtf=body_rtf,
+            body_artifacts=body_artifacts,
             attachments=attachments,
             mime_parts=mime_parts,
             source_file=source_info,
@@ -195,7 +251,7 @@ class MSGParser(BaseEmailParser):
         )
 
     def _extract_headers(
-        self, msg: extract_msg.Message
+        self, msg: Any
     ) -> Tuple[List[Tuple[str, str]], Dict[str, Union[str, List[str]]]]:
         ordered: List[Tuple[str, str]] = []
         headers_dict: Dict[str, List[str]] = {}

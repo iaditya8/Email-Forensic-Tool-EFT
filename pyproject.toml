@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "eft"
 version = "0.1.0"
 description = "Enterprise-Grade Digital Forensics & Incident Response (DFIR) Email Analysis Engine"
 readme = "README.md"
-requires-python = ">=3.9"
-license = { text = "MIT" }
+requires-python = ">=3.9,<4.0"
+license = "MIT"
 authors = [
     { name = "Aditya" }
 ]
@@ -31,8 +31,18 @@ dev = [
     "pytest-cov>=4.1.0",
     "ruff>=0.3.0",
     "mypy>=1.8.0",
-    "types-requests",
+    "types-requests>=2.31.0",
 ]
+
+[tool.poetry]
+packages = [{include = "eft", from = "src"}]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=8.0.0"
+pytest-cov = ">=4.1.0"
+ruff = ">=0.3.0"
+mypy = ">=1.8.0"
+types-requests = ">=2.31.0"
 
 [tool.pytest.ini_options]
 minversion = "8.0"
@@ -47,3 +57,10 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
 ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+
