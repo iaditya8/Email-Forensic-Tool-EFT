@@ -67,6 +67,7 @@ from eft.reporting.custody import ChainOfCustodyManager
 from eft.reporting.exporter import ForensicReportExporter
 from eft.reporting.timeline import TimelineGenerator
 from eft.ui.inspector import EmailInspector
+from eft.ui.map_visualizer import TransitMapVisualizer
 from eft.ui.sanitizer import HTMLSanitizer
 
 __version__ = "0.1.0"
@@ -136,5 +137,6 @@ __all__ = [
     "ForensicTimelineReport",
     "ForensicReportExporter",
     "EmailInspector",
+    "TransitMapVisualizer",
     "HTMLSanitizer",
 ]
