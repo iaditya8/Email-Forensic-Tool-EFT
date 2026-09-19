@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -59,6 +59,34 @@ class FileTypeInspection(BaseModel):
     risk_reasons: List[str] = Field(default_factory=list)
 
 
+class YARAMatchArtifact(BaseModel):
+    """Forensic record of a YARA signature match on an attachment payload."""
+
+    rule_name: str
+    namespace: str = "default"
+    tags: List[str] = Field(default_factory=list)
+    meta: Dict[str, Any] = Field(default_factory=dict)
+    matched_strings: List[Tuple[str, str]] = Field(default_factory=list)  # (identifier, snippet)
+    severity: str = "HIGH"  # LOW, MEDIUM, HIGH, CRITICAL
+
+
+class AttachmentThreatAnalysis(BaseModel):
+    """Deep static threat inspection analysis for an individual attachment."""
+
+    is_malicious: bool = False
+    threat_level: str = "BENIGN"  # BENIGN, SUSPICIOUS, MALICIOUS
+    threat_score: float = 0.0  # 0.0 to 100.0
+    threat_categories: List[str] = Field(
+        default_factory=list
+    )  # MACRO_VBA, EMBEDDED_PE, SCRIPT_PAYLOAD, EXPLOIT_PDF, DANGEROUS_EXTENSION
+    dangerous_extension: bool = False
+    extension_mismatch: bool = False
+    yara_matches: List[YARAMatchArtifact] = Field(default_factory=list)
+    extracted_strings: List[str] = Field(default_factory=list)
+    ioc_hashes_matched: List[str] = Field(default_factory=list)
+    threat_indicators: List[str] = Field(default_factory=list)
+
+
 class ExtractedAttachment(BaseModel):
     """Fully extracted, isolated, and cryptographically fingerprinted forensic attachment artifact."""
 
@@ -80,6 +108,10 @@ class ExtractedAttachment(BaseModel):
     file_type_inspection: FileTypeInspection = Field(
         default_factory=FileTypeInspection,
         description="Magic byte inspection and spoofing risk analysis",
+    )
+    threat_analysis: Optional[AttachmentThreatAnalysis] = Field(
+        default=None,
+        description="Static threat inspection, macro analysis, and YARA rule match results",
     )
     extracted_timestamp_utc: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
@@ -417,6 +449,23 @@ class ContentObfuscationReport(BaseModel):
     flags: List[str] = Field(default_factory=list)
 
 
+class AttachmentAnalysisReport(BaseModel):
+    """Forensic report compiling static threat analysis and YARA scanning across all attachments."""
+
+    total_attachments_scanned: int = 0
+    malicious_attachments_count: int = 0
+    suspicious_attachments_count: int = 0
+    dangerous_extensions_count: int = 0
+    total_yara_matches: int = 0
+    overall_attachment_risk: str = "CLEAN"  # CLEAN, SUSPICIOUS, MALICIOUS
+    threat_score: float = 0.0  # 0.0 to 100.0
+    attachment_analyses: List[AttachmentThreatAnalysis] = Field(default_factory=list)
+    flags: List[str] = Field(
+        default_factory=list,
+        description="Attachment threat alert flags (e.g. 'MALICIOUS_VBA_MACRO_DETECTED', 'YARA_RULE_MATCH_EMBEDDED_PE')",
+    )
+
+
 class CanonicalEmail(BaseModel):
     """Normalized, court-defensible representation of an ingested email."""
 
@@ -462,6 +511,10 @@ class CanonicalEmail(BaseModel):
     obfuscation_report: Optional[ContentObfuscationReport] = Field(
         default=None,
         description="Forensic content obfuscation, hidden text, and decoded blob analysis report",
+    )
+    attachment_threat_report: Optional[AttachmentAnalysisReport] = Field(
+        default=None,
+        description="Forensic static threat analysis and YARA scanning report for attachments",
     )
 
     # Message bodies
