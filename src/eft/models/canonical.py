@@ -155,9 +155,7 @@ class CanonicalEmail(BaseModel):
 
     # Forensic lineage & provenance
     source_file: Optional[SourceFileInfo] = None
-    ingestion_timestamp_utc: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    ingestion_timestamp_utc: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     parsing_diagnostics: List[str] = Field(
         default_factory=list,
         description="Diagnostic logs, non-fatal anomalies, and warnings recorded during ingestion",

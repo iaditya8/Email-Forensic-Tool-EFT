@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 from email.message import EmailMessage
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 from eft.core.integrity import compute_bytes_hashes
 from eft.models.canonical import (
@@ -23,7 +23,13 @@ class MIMETreeDecomposer:
 
     def decompose(
         self, msg: EmailMessage
-    ) -> Tuple[List[MIMEPartNode], IsolatedBodyArtifacts, List[AttachmentMetadata], Optional[str], Optional[str]]:
+    ) -> Tuple[
+        List[MIMEPartNode],
+        IsolatedBodyArtifacts,
+        List[AttachmentMetadata],
+        Optional[str],
+        Optional[str],
+    ]:
         """Decompose an EmailMessage into hierarchical MIME nodes, isolated body artifacts, and attachments.
 
         Args:
@@ -57,12 +63,8 @@ class MIMETreeDecomposer:
         for node in root_nodes:
             self._flatten_tree(node, flat_nodes)
 
-        combined_plain = (
-            "\n\n".join([b.content for b in plain_bodies]) if plain_bodies else None
-        )
-        combined_html = (
-            "\n\n".join([b.content for b in html_bodies]) if html_bodies else None
-        )
+        combined_plain = "\n\n".join([b.content for b in plain_bodies]) if plain_bodies else None
+        combined_html = "\n\n".join([b.content for b in html_bodies]) if html_bodies else None
 
         body_artifacts = IsolatedBodyArtifacts(
             plain_bodies=plain_bodies,
@@ -74,7 +76,7 @@ class MIMETreeDecomposer:
 
     def _process_part(
         self,
-        part: EmailMessage,
+        part: Any,
         parent_path: Optional[str],
         depth: int,
         sibling_index: int,
@@ -93,7 +95,8 @@ class MIMETreeDecomposer:
         charset = part.get_content_charset()
         encoding = part.get("Content-Transfer-Encoding")
         content_id = part.get("Content-ID")
-        boundary = part.get_param("boundary") if hasattr(part, "get_param") else None
+        boundary_raw = part.get_param("boundary") if hasattr(part, "get_param") else None
+        boundary = str(boundary_raw) if boundary_raw is not None else None
 
         # Extract part-level raw headers
         part_headers: List[Tuple[str, str]] = []
