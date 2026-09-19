@@ -16,6 +16,13 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.threat import (
+    CompositeRiskReport,
+    RiskFactor,
+    RiskSeverity,
+    RiskVectorType,
+    VectorRiskScore,
+)
 from eft.models.timeline import (
     ForensicTimelineReport,
     TimelineAnomalyType,
@@ -40,4 +47,9 @@ __all__ = [
     "TimelineAnomalyType",
     "TimelineEvent",
     "ForensicTimelineReport",
+    "RiskSeverity",
+    "RiskVectorType",
+    "RiskFactor",
+    "VectorRiskScore",
+    "CompositeRiskReport",
 ]
