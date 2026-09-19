@@ -163,7 +163,11 @@ def scan_command(
         None, "--config", help="Optional JSON/YAML config with protected domains & VIPs"
     ),
     ioc_file: Optional[Path] = typer.Option(
-        None, "--ioc-hashes", help="Optional file containing known malicious threat hashes"
+        None,
+        "--ioc-file",
+        "--ioc-hashes",
+        "-i",
+        help="Optional file containing known malicious threat hashes",
     ),
 ) -> None:
     """Run comprehensive DFIR forensic inspection, multi-vector threat scoring, and triage."""
