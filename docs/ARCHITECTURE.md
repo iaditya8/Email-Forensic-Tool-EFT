@@ -4,45 +4,48 @@
 
 The Email Forensic Tool (EFT) is architected following clean, layered design principles for digital forensic readiness: **Immutability of Evidence**, **Determinism**, **Modular Extensibility**, and **Court-Defensible Reporting**.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                             PRESENTATION LAYER                              │
-│   • CLI (Rich Terminal Output)  • Web UI Dashboard  • REST API Endpoints    │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-┌──────────────────────────────────────▼──────────────────────────────────────┐
-│                              APPLICATION CORE                               │
-│                                                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │                     1. Ingestion & Extraction Layer                   │  │
-│  │   • Multi-Format Reader (.eml, .msg, .mbox)                           │  │
-│  │   • MIME Tree Decomposer & Character Set Normalizer                   │  │
-│  │   • Attachment Extractor, File Typer (Magic Bytes) & Hash Generator   │  │
-│  └───────────────────────────────────┬───────────────────────────────────┘  │
-│                                      │ Canonical Forensic Object (JSON)      │
-│  ┌───────────────────────────────────▼───────────────────────────────────┐  │
-│  │                     2. Multi-Vector Analysis Engine                   │  │
-│  │  ┌──────────────────────┐  ┌──────────────────────┐  ┌─────────────┐  │  │
-│  │  │ Relay & Hop Analyzer │  │ SPF/DKIM/DMARC/ARC   │  │ GeoIP & ASN │  │  │
-│  │  └──────────────────────┘  └──────────────────────┘  └─────────────┘  │  │
-│  │  ┌──────────────────────┐  ┌──────────────────────┐  ┌─────────────┐  │  │
-│  │  │ Link / URL Forensics │  │ BEC & Spoof Detector │  │ YARA Rules  │  │  │
-│  │  └──────────────────────┘  └──────────────────────┘  └─────────────┘  │  │
-│  └───────────────────────────────────┬───────────────────────────────────┘  │
-│                                      │ Enriched Analysis Results             │
-│  ┌───────────────────────────────────▼───────────────────────────────────┐  │
-│  │                3. Evidence & Reporting Pipeline                       │  │
-│  │   • Chain of Custody & Hash Integrity Verification                    │  │
-│  │   • Chronological Timeline Builder                                    │  │
-│  │   • Exporters: PDF (Executive), JSON (Full Schema), CSV, STIX 2.1     │  │
-│  └───────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-┌──────────────────────────────────────▼──────────────────────────────────────┐
-│                                STORAGE LAYER                                │
-│   • Read-Only Evidence Repository                                           │
-│   • Local SQLite / Metadata Store for Cases & Cached Threat Intelligence    │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Presentation["1. Presentation Layer"]
+        CLI["Rich Terminal CLI"]
+        WebUI["Web Dashboard"]
+        API["RESTful APIs"]
+    end
+
+    subgraph AppCore["2. Application Core"]
+        subgraph Ingestion["Ingestion & Extraction Layer"]
+            Reader["Multi-Format Parser (.eml, .msg, .mbox)"]
+            MIME["MIME Tree Decomposer"]
+            AttHash["Attachment Extractor & Multi-Hashing"]
+        end
+
+        subgraph Engine["Forensic Analysis Engine"]
+            Hops["Relay & Hop Analyzer"]
+            Auth["SPF / DKIM / DMARC / ARC"]
+            Geo["GeoIP & ASN Lookup"]
+            Links["URL & Link Forensics"]
+            BEC["BEC & Spoofing Detector"]
+            YARA["YARA Rule Scanner"]
+        end
+
+        subgraph Reporting["Evidence & Reporting Pipeline"]
+            Custody["Chain of Custody & Hash Validator"]
+            Timeline["Chronological Timeline Engine"]
+            Export["Multi-Format Exporters (PDF, JSON, CSV, STIX)"]
+        end
+    end
+
+    subgraph Storage["3. Storage & Evidence Vault"]
+        Vault[("Read-Only Evidence Vault")]
+        Cache[("Metadata & Threat Cache")]
+    end
+
+    Presentation --> Ingestion
+    Ingestion --> Engine
+    Engine --> Reporting
+    Ingestion -.-> Vault
+    Reporting -.-> Vault
+    Engine -.-> Cache
 ```
 
 ---

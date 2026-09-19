@@ -59,45 +59,48 @@ Unlike conventional mail viewers, EFT treats every input as critical digital evi
 
 ## 🏛 System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                             PRESENTATION LAYER                              │
-│   • Interactive Web Dashboard    • Rich Terminal CLI    • RESTful APIs      │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-┌──────────────────────────────────────▼──────────────────────────────────────┐
-│                              APPLICATION CORE                               │
-│                                                                             │
-│  ┌───────────────────────────────────────────────────────────────────────┐  │
-│  │                     1. Ingestion & Extraction Layer                   │  │
-│  │   • Multi-Format Reader (.eml, .msg, .mbox)                           │  │
-│  │   • MIME Tree Decomposer & Character Set Normalizer                   │  │
-│  │   • Attachment Extractor, File Typer (Magic Bytes) & Hash Generator   │  │
-│  └───────────────────────────────────┬───────────────────────────────────┘  │
-│                                      │ Canonical Forensic Object (JSON)      │
-│  ┌───────────────────────────────────▼───────────────────────────────────┐  │
-│  │                     2. Multi-Vector Analysis Engine                   │  │
-│  │  ┌──────────────────────┐  ┌──────────────────────┐  ┌─────────────┐  │  │
-│  │  │ Relay & Hop Analyzer │  │ SPF/DKIM/DMARC/ARC   │  │ GeoIP & ASN │  │  │
-│  │  └──────────────────────┘  └──────────────────────┘  └─────────────┘  │  │
-│  │  ┌──────────────────────┐  ┌──────────────────────┐  ┌─────────────┐  │  │
-│  │  │ Link / URL Forensics │  │ BEC & Spoof Detector │  │ YARA Rules  │  │  │
-│  │  └──────────────────────┘  └──────────────────────┘  └─────────────┘  │  │
-│  └───────────────────────────────────┬───────────────────────────────────┘  │
-│                                      │ Enriched Analysis Results             │
-│  ┌───────────────────────────────────▼───────────────────────────────────┐  │
-│  │                3. Evidence & Reporting Pipeline                       │  │
-│  │   • Chain of Custody & Hash Integrity Verification                    │  │
-│  │   • Chronological Timeline Builder                                    │  │
-│  │   • Exporters: PDF (Executive), JSON (Full Schema), CSV, STIX 2.1     │  │
-│  └───────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────┬──────────────────────────────────────┘
-                                       │
-┌──────────────────────────────────────▼──────────────────────────────────────┐
-│                                STORAGE LAYER                                │
-│   • Read-Only Evidence Repository                                           │
-│   • Local Metadata Store for Cases & Cached Threat Intelligence             │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Presentation["1. Presentation Layer"]
+        CLI["Rich Terminal CLI"]
+        WebUI["Web Dashboard"]
+        API["RESTful APIs"]
+    end
+
+    subgraph AppCore["2. Application Core"]
+        subgraph Ingestion["Ingestion & Extraction Layer"]
+            Reader["Multi-Format Parser (.eml, .msg, .mbox)"]
+            MIME["MIME Tree Decomposer"]
+            AttHash["Attachment Extractor & Multi-Hashing"]
+        end
+
+        subgraph Engine["Forensic Analysis Engine"]
+            Hops["Relay & Hop Analyzer"]
+            Auth["SPF / DKIM / DMARC / ARC"]
+            Geo["GeoIP & ASN Lookup"]
+            Links["URL & Link Forensics"]
+            BEC["BEC & Spoofing Detector"]
+            YARA["YARA Rule Scanner"]
+        end
+
+        subgraph Reporting["Evidence & Reporting Pipeline"]
+            Custody["Chain of Custody & Hash Validator"]
+            Timeline["Chronological Timeline Engine"]
+            Export["Multi-Format Exporters (PDF, JSON, CSV, STIX)"]
+        end
+    end
+
+    subgraph Storage["3. Storage & Evidence Vault"]
+        Vault[("Read-Only Evidence Vault")]
+        Cache[("Metadata & Threat Cache")]
+    end
+
+    Presentation --> Ingestion
+    Ingestion --> Engine
+    Engine --> Reporting
+    Ingestion -.-> Vault
+    Reporting -.-> Vault
+    Engine -.-> Cache
 ```
 
 For complete architectural details, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -135,14 +138,20 @@ For technical specifications, see [docs/EVIDENCE_INTEGRITY.md](docs/EVIDENCE_INT
 
 To maintain repository stability and traceable history, this project enforces strict branch policies:
 
-```
-[main] (Protected - Production Releases)
-  ▲
-  │ (Pull Request via Review & CI)
-[dev] (Integration Branch)
-  ▲
-  │ (Pull Request per Task)
-[feature/phaseX-.../taskX.Y-...] (Individual Task Branch)
+```mermaid
+gitGraph
+    commit id: "Initial Setup"
+    branch dev
+    checkout dev
+    commit id: "Dev Baseline"
+    branch "feature/phase1-ingestion"
+    checkout "feature/phase1-ingestion"
+    commit id: "Task 1.1: Multi-Format Parser"
+    commit id: "Task 1.2: MIME Decomposer"
+    checkout dev
+    merge "feature/phase1-ingestion" id: "PR Merged"
+    checkout main
+    merge dev id: "Release"
 ```
 
 ### Branching Rules:
