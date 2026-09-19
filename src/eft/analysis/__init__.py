@@ -3,9 +3,11 @@
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.relay_analyzer import RelayAnalyzer
+from eft.analysis.url_analyzer import URLAnalyzer
 
 __all__ = [
     "RelayAnalyzer",
     "NetworkIntelligenceService",
     "AuthenticationVerifier",
+    "URLAnalyzer",
 ]
