@@ -1,3 +1,4 @@
+from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.core.exceptions import (
     CorruptFileError,
     EFTException,
@@ -24,7 +25,9 @@ from eft.models.canonical import (
     IsolatedBody,
     IsolatedBodyArtifacts,
     MIMEPartNode,
+    RelayHop,
     SourceFileInfo,
+    TransitRoute,
 )
 
 __version__ = "0.1.0"
@@ -39,6 +42,7 @@ __all__ = [
     "HeaderDecomposer",
     "MIMETreeDecomposer",
     "AttachmentExtractor",
+    "RelayAnalyzer",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
@@ -46,6 +50,8 @@ __all__ = [
     "FileTypeInspection",
     "MIMEPartNode",
     "HeaderDecomposition",
+    "RelayHop",
+    "TransitRoute",
     "IsolatedBody",
     "IsolatedBodyArtifacts",
     "IngestionResult",

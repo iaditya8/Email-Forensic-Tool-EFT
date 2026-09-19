@@ -155,6 +155,49 @@ class IsolatedBodyArtifacts(BaseModel):
     rtf_bodies: List[IsolatedBody] = Field(default_factory=list)
 
 
+class RelayHop(BaseModel):
+    """Forensic representation of a single Mail Transfer Agent (MTA) transmission hop."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    hop_number: int = 1  # 1-indexed chronological hop number
+    raw_header: str = ""
+    from_host: Optional[str] = None
+    from_ip: Optional[str] = None
+    by_host: Optional[str] = None
+    by_ip: Optional[str] = None
+    protocol: Optional[str] = None
+    auth_user: Optional[str] = None
+    tls_cipher: Optional[str] = None
+    message_id_stamp: Optional[str] = None
+    timestamp_raw: Optional[str] = None
+    timestamp_utc: Optional[datetime] = None
+    delay_seconds: float = 0.0  # Transit time in seconds elapsed since previous hop
+    is_private_ip: bool = False
+    is_originating_hop: bool = False
+    anomalies: List[str] = Field(
+        default_factory=list,
+        description="Forensic anomalies detected at this hop (negative delay, private IP in external hop, etc.)",
+    )
+
+
+class TransitRoute(BaseModel):
+    """Reconstructed chronological transit route and delay timeline across all MTAs."""
+
+    total_hops: int = 0
+    total_transit_seconds: float = 0.0
+    originating_ip: Optional[str] = None
+    originating_host: Optional[str] = None
+    hops: List[RelayHop] = Field(
+        default_factory=list,
+        description="Chronologically ordered list of hops (Hop 1 = sender/origin -> Hop N = recipient MTA)",
+    )
+    anomalies_detected: List[str] = Field(
+        default_factory=list,
+        description="Global transit anomalies (e.g. clock skew, impossible routing jumps)",
+    )
+
+
 class CanonicalEmail(BaseModel):
     """Normalized, court-defensible representation of an ingested email."""
 
@@ -180,6 +223,10 @@ class CanonicalEmail(BaseModel):
     header_decomposition: Optional[HeaderDecomposition] = Field(
         default=None,
         description="Categorized header structures (Received, Auth, DKIM, ARC, X-*)",
+    )
+    transit_route: Optional[TransitRoute] = Field(
+        default=None,
+        description="Reconstructed chronological MTA transit hops, delays, and originating IP",
     )
 
     # Message bodies
