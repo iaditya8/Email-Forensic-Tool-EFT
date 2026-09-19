@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Forensic Tool (EFT) — Air-Gapped DFIR Analysis Suite</title>
+  <style>
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-card: rgba(17, 24, 39, 0.85);
+      --bg-card-hover: #1e293b;
+      --border-color: #374151;
+      --border-focus: #38bdf8;
+      --text-primary: #f9fafb;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --accent-cyan: #06b6d4;
+      --accent-blue: #3b82f6;
+      --accent-emerald: #10b981;
+      --risk-critical: #ef4444;
+      --risk-high: #f97316;
+      --risk-medium: #eab308;
+      --risk-low: #3b82f6;
+      --risk-benign: #10b981;
+      --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-primary); color: var(--text-primary); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .brand { display: flex; align-items: center; gap: 0.75rem; }
+    .brand-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; color: #fff; box-shadow: 0 0 12px rgba(6, 182, 212, 0.5); }
+    .brand-title { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.025em; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .header-badges { display: flex; gap: 0.5rem; }
+    .badge { padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid transparent; }
+    .badge-airgap { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
+    .badge-iso { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
+    
+    main { flex: 1; max-width: 1400px; width: 100%; margin: 0 auto; padding: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+    
+    /* Ingestion Card */
+    .card { background: var(--bg-card); backdrop-filter: blur(16px); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: var(--glass-shadow); }
+    .dropzone { border: 2px dashed var(--border-color); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s ease; background: rgba(15, 23, 42, 0.4); }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.05); }
+    .dropzone-icon { font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--accent-cyan); }
+    .dropzone-text { font-size: 1rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .dropzone-subtext { font-size: 0.8rem; color: var(--text-muted); }
+    
+    .meta-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .input-group { display: flex; flex-direction: column; gap: 0.35rem; }
+    .input-group label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+    .input-group input, .input-group select { background: #1e293b; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.875rem; outline: none; transition: border-color 0.2s; }
+    .input-group input:focus, .input-group select:focus { border-color: var(--border-focus); }
+    
+    .btn { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: #fff; border: none; padding: 0.65rem 1.25rem; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; }
+    .btn:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3); }
+    .btn-secondary { background: #334155; }
+    .btn-secondary:hover { background: #475569; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+    
+    /* Results Section */
+    #results-section { display: none; flex-direction: column; gap: 1.5rem; }
+    
+    /* Triage Hero */
+    .triage-grid { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; }
+    @media (max-width: 900px) { .triage-grid { grid-template-columns: 1fr; } }
+    
+    .risk-card { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; border-radius: 12px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); }
+    .score-circle { width: 120px; height: 120px; border-radius: 50%; border: 6px solid var(--risk-low); display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 1rem; position: relative; }
+    .score-number { font-size: 2.25rem; font-weight: 800; line-height: 1; }
+    .score-max { font-size: 0.75rem; color: var(--text-muted); }
+    .threat-tag { font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    
+    .summary-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .stat-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
+    .stat-box .title { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem; }
+    .stat-box .value { font-size: 1.1rem; font-weight: 600; word-break: break-all; }
+    
+    /* Tabs */
+    .tabs-nav { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; overflow-x: auto; }
+    .tab-btn { background: transparent; border: none; color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); border-bottom: 2px solid var(--accent-cyan); }
+    
+    .tab-content { display: none; padding-top: 1rem; }
+    .tab-content.active { display: block; }
+    
+    /* Tables */
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+    th { background: rgba(30, 41, 59, 0.8); color: var(--text-secondary); padding: 0.75rem 1rem; font-weight: 600; border-bottom: 1px solid var(--border-color); }
+    td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(55, 65, 81, 0.5); vertical-align: top; }
+    tr:hover { background: rgba(255, 255, 255, 0.02); }
+    
+    .auth-badge { padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; display: inline-block; }
+    .auth-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .auth-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .auth-none { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+    
+    .action-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+    
+    .raw-viewer { background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8rem; line-height: 1.5; color: #cbd5e1; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
+    
+    .svg-map-wrapper { width: 100%; overflow-x: auto; background: #0f172a; border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color); }
+    
+    .alert-box { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.85rem; border-left: 4px solid var(--risk-critical); background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
+    
+    footer { border-top: 1px solid var(--border-color); padding: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-secondary); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">E</div>
+      <div>
+        <div class="brand-title">Email Forensic Tool (EFT)</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted);">Enterprise DFIR & Authentication Analysis Suite v1.0.0</div>
+      </div>
+    </div>
+    <div class="header-badges">
+      <span class="badge badge-airgap">100% Air-Gapped</span>
+      <span class="badge badge-iso">ISO/IEC 27037 Compliant</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Ingestion Hero -->
+    <section class="card">
+      <h2 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary);">Acquire & Ingest Digital Evidence</h2>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
+        <input type="file" id="file-input" style="display: none;" accept=".eml,.msg,.mbox">
+        <div class="dropzone-icon">&#128190;</div>
+        <div class="dropzone-text" id="file-name-label">Drag & Drop Evidence File (.eml, .msg, .mbox) or Click to Browse</div>
+        <div class="dropzone-subtext">Automatic cryptographic acquisition hashing (MD5, SHA-1, SHA-256, SHA-512)</div>
+      </div>
+
+      <div class="meta-row">
+        <div class="input-group">
+          <label for="sample-select">Load Forensic Corpus Sample</label>
+          <select id="sample-select" onchange="loadCorpusSample(this.value)">
+            <option value="">-- Choose Forensic Sample --</option>
+            <option value="01_benign_corporate.eml">01 - Benign Corporate Email (Clean SPF/DKIM/DMARC)</option>
+            <option value="02_phishing_homoglyph.eml">02 - Phishing Homoglyph & Punycode Deception</option>
+            <option value="03_bec_wire_fraud.eml">03 - Business Email Compromise (CEO Wire Fraud)</option>
+            <option value="04_malware_double_extension.eml">04 - Malware Double Extension & MIME Deception</option>
+            <option value="05_obfuscation_zero_width.eml">05 - Zero-Width & HTML Obfuscation Bypass</option>
+            <option value="06_transit_anomaly_tor.eml">06 - Transit Anomaly (Tor Relay & ASN Mismatch)</option>
+            <option value="07_mixed_mailbox.mbox">07 - Multi-Message MBOX Archive</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label for="case-id">Case Reference ID</label>
+          <input type="text" id="case-id" value="CASE-2026-DFIR" placeholder="e.g. CASE-2026-001">
+        </div>
+        <div class="input-group">
+          <label for="examiner-name">Lead Examiner</label>
+          <input type="text" id="examiner-name" value="Forensic Investigator" placeholder="Examiner Name / Badge">
+        </div>
+      </div>
+
+      <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button class="btn" id="analyze-btn" onclick="executeAnalysis()">Run Forensic Triage & Scoring</button>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section id="results-section">
+      <!-- Triage Hero -->
+      <div class="triage-grid">
+        <div class="risk-card">
+          <div class="score-circle" id="score-circle">
+            <div class="score-number" id="risk-score-val">0</div>
+            <div class="score-max">/ 100</div>
+          </div>
+          <div class="threat-tag" id="risk-level-tag">BENIGN</div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;" id="confidence-val">Confidence: 100%</div>
+        </div>
+
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">Evidence Provenance & Custody Fingerprint</h3>
+            <div class="summary-details">
+              <div class="stat-box">
+                <div class="title">Subject</div>
+                <div class="value" id="res-subject">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="title">Sender (From)</div>
+                <div class="value" id="res-from">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="title">Recipient (To)</div>
+                <div class="value" id="res-to">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="title">SHA-256 Digest</div>
+                <div class="value" id="res-sha256" style="font-size: 0.75rem; font-family: monospace;">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="action-bar" style="margin-top: 1rem;">
+            <button class="btn btn-secondary" onclick="exportReport('pdf')">&#128196; Download PDF</button>
+            <button class="btn btn-secondary" onclick="exportReport('stix')">&#128737; STIX 2.1</button>
+            <button class="btn btn-secondary" onclick="exportReport('csv')">&#128202; CSV IoCs</button>
+            <button class="btn btn-secondary" onclick="exportReport('json')">&#123; &#125; JSON</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Critical Findings Alert Panel -->
+      <div id="critical-alerts-container"></div>
+
+      <!-- Detail Tabs -->
+      <div class="card">
+        <div class="tabs-nav">
+          <button class="tab-btn active" onclick="switchTab('auth')">Authentication (SPF/DKIM/DMARC)</button>
+          <button class="tab-btn" onclick="switchTab('transit')">MTA Transit & Map</button>
+          <button class="tab-btn" onclick="switchTab('urls')">URLs & Phishing</button>
+          <button class="tab-btn" onclick="switchTab('attachments')">Attachments & YARA</button>
+          <button class="tab-btn" onclick="switchTab('bec')">BEC & Impersonation</button>
+          <button class="tab-btn" onclick="switchTab('timeline')">Evidence Timeline</button>
+          <button class="tab-btn" onclick="switchTab('raw')">Raw Headers & Inspector</button>
+        </div>
+
+        <!-- Auth Tab -->
+        <div class="tab-content active" id="tab-auth">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Protocol</th>
+                  <th>Verdict</th>
+                  <th>Domain / Selector</th>
+                  <th>Details & Forensic Insights</th>
+                </tr>
+              </thead>
+              <tbody id="auth-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Transit Tab -->
+        <div class="tab-content" id="tab-transit">
+          <div class="svg-map-wrapper" id="svg-map-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading MTA Geodesic Map...</div>
+          </div>
+          <div class="table-container" style="margin-top: 1rem;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Hop #</th>
+                  <th>From IP & Host</th>
+                  <th>By Host</th>
+                  <th>GeoIP / ASN</th>
+                  <th>Latency</th>
+                  <th>Anomalies</th>
+                </tr>
+              </thead>
+              <tbody id="transit-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- URLs Tab -->
+        <div class="tab-content" id="tab-urls">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Defanged URL</th>
+                  <th>Domain</th>
+                  <th>Risk Score</th>
+                  <th>Flags / Homoglyphs</th>
+                </tr>
+              </thead>
+              <tbody id="urls-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Attachments Tab -->
+        <div class="tab-content" id="tab-attachments">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Filename</th>
+                  <th>MIME Type</th>
+                  <th>Size</th>
+                  <th>SHA-256 Digest</th>
+                  <th>Threat Findings</th>
+                </tr>
+              </thead>
+              <tbody id="attachments-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- BEC Tab -->
+        <div class="tab-content" id="tab-bec">
+          <div id="bec-findings-container"></div>
+        </div>
+
+        <!-- Timeline Tab -->
+        <div class="tab-content" id="tab-timeline">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Timestamp (UTC)</th>
+                  <th>Event Type</th>
+                  <th>Source / Entity</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody id="timeline-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Raw Tab -->
+        <div class="tab-content" id="tab-raw">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div>
+              <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Parsed Headers</h4>
+              <div class="raw-viewer" id="raw-headers-viewer"></div>
+            </div>
+            <div>
+              <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Sanitized Body Content</h4>
+              <div class="raw-viewer" id="raw-body-viewer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    Email Forensic Tool (EFT) — Autonomous DFIR & Threat Analysis Engine | ISO/IEC 27037 Digital Chain of Custody
+  </footer>
+
+  <script>
+    let currentEvidenceFile = null;
+    let currentAnalysisData = null;
+
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const fileNameLabel = document.getElementById('file-name-label');
+
+    // Drag & Drop
+    ['dragenter', 'dragover'].forEach(name => {
+      dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+    });
+    dropzone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length > 0) {
+        handleFileSelect(e.dataTransfer.files[0]);
+      }
+    });
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        handleFileSelect(e.target.files[0]);
+      }
+    });
+
+    function handleFileSelect(file) {
+      currentEvidenceFile = file;
+      fileNameLabel.innerHTML = `<strong>Selected Evidence:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+      document.getElementById('sample-select').value = "";
+    }
+
+    async function loadCorpusSample(sampleName) {
+      if (!sampleName) return;
+      currentEvidenceFile = null;
+      fileNameLabel.innerHTML = `<strong>Corpus Sample Selected:</strong> ${sampleName}`;
+      document.getElementById('analyze-btn').innerText = "Analyzing Sample...";
+      document.getElementById('analyze-btn').disabled = true;
+
+      try {
+        const res = await fetch(`/api/sample/${sampleName}`);
+        if (!res.ok) throw new Error("Failed to load sample");
+        const data = await res.json();
+        renderAnalysisResults(data);
+      } catch (err) {
+        alert("Error loading sample: " + err.message);
+      } finally {
+        document.getElementById('analyze-btn').innerText = "Run Forensic Triage & Scoring";
+        document.getElementById('analyze-btn').disabled = false;
+      }
+    }
+
+    async function executeAnalysis() {
+      const sampleSelect = document.getElementById('sample-select').value;
+      if (sampleSelect) {
+        return loadCorpusSample(sampleSelect);
+      }
+      if (!currentEvidenceFile) {
+        alert("Please select or drop an evidence file (.eml, .msg, .mbox) first.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", currentEvidenceFile);
+      formData.append("case_id", document.getElementById('case-id').value);
+      formData.append("examiner", document.getElementById('examiner-name').value);
+
+      document.getElementById('analyze-btn').innerText = "Analyzing Evidence...";
+      document.getElementById('analyze-btn').disabled = true;
+
+      try {
+        const res = await fetch("/api/analyze", {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Analysis failed");
+        }
+        const data = await res.json();
+        renderAnalysisResults(data);
+      } catch (err) {
+        alert("Forensic Analysis Error: " + err.message);
+      } finally {
+        document.getElementById('analyze-btn').innerText = "Run Forensic Triage & Scoring";
+        document.getElementById('analyze-btn').disabled = false;
+      }
+    }
+
+    function renderAnalysisResults(data) {
+      currentAnalysisData = data;
+      const email = data.email || data;
+      const risk = data.risk_report || {};
+
+      document.getElementById('results-section').style.display = 'flex';
+
+      // Risk Score & Level
+      const score = Math.round(risk.overall_score !== undefined ? risk.overall_score : (risk.composite_score || 0));
+      const level = (risk.risk_level || risk.threat_level || "CLEAN").toUpperCase();
+      document.getElementById('risk-score-val').innerText = score;
+      document.getElementById('risk-level-tag').innerText = level;
+      document.getElementById('confidence-val').innerText = `Confidence: ${Math.round((risk.confidence_score || 1.0) * 100)}%`;
+
+      const scoreCircle = document.getElementById('score-circle');
+      let color = "var(--risk-benign)";
+      if (level.includes("CRITICAL")) color = "var(--risk-critical)";
+      else if (level.includes("HIGH")) color = "var(--risk-high)";
+      else if (level.includes("MEDIUM")) color = "var(--risk-medium)";
+      else if (level.includes("LOW")) color = "var(--risk-low)";
+      scoreCircle.style.borderColor = color;
+      document.getElementById('risk-level-tag').style.color = color;
+
+      // Summary
+      document.getElementById('res-subject').innerText = email.subject || "(No Subject)";
+      document.getElementById('res-from').innerText = email.sender || "-";
+      document.getElementById('res-to').innerText = (email.recipients || []).join(", ") || "-";
+      document.getElementById('res-sha256').innerText = data.sha256 || email.sha256 || "-";
+
+      // Critical alerts / Risk factors
+      const alertsContainer = document.getElementById('critical-alerts-container');
+      alertsContainer.innerHTML = "";
+      const factors = risk.top_risk_factors || risk.factors || [];
+      factors.forEach(factor => {
+        const box = document.createElement('div');
+        box.className = 'alert-box';
+        const msg = typeof factor === 'string' ? factor : `${factor.name || factor.description} (+${factor.score_contribution || 0} pts)`;
+        box.innerHTML = `<strong>ALERT:</strong> ${msg}`;
+        alertsContainer.appendChild(box);
+      });
+
+      // Render Tabs
+      renderAuthTab(email.authentication_report || email.authentication_results);
+      renderTransitTab(email.transit_route);
+      renderUrlsTab(email.url_report || email.url_threat_report);
+      renderAttachmentsTab(email.attachment_threat_report);
+      renderBECTab(email.bec_report);
+      renderTimelineTab(email.timeline_report);
+      renderRawTab(email);
+    }
+
+    function renderAuthTab(auth) {
+      const tbody = document.getElementById('auth-table-body');
+      tbody.innerHTML = "";
+      if (!auth) {
+        tbody.innerHTML = "<tr><td colspan='4'>No authentication records found.</td></tr>";
+        return;
+      }
+
+      const rows = [
+        { proto: "SPF", res: auth.spf_result, domain: auth.spf_domain, details: auth.spf_details },
+        { proto: "DKIM", res: auth.dkim_result, domain: auth.dkim_domain, details: auth.dkim_details },
+        { proto: "DMARC", res: auth.dmarc_result, domain: auth.dmarc_domain, details: auth.dmarc_details },
+        { proto: "ARC", res: auth.arc_result, domain: "-", details: auth.arc_details }
+      ];
+
+      rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const badgeClass = r.res === 'pass' ? 'auth-pass' : (r.res === 'fail' ? 'auth-fail' : 'auth-none');
+        tr.innerHTML = `
+          <td><strong>${r.proto}</strong></td>
+          <td><span class="auth-badge ${badgeClass}">${(r.res || 'NONE').toUpperCase()}</span></td>
+          <td>${r.domain || '-'}</td>
+          <td>${r.details || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderTransitTab(transit) {
+      const tbody = document.getElementById('transit-table-body');
+      tbody.innerHTML = "";
+      if (!transit || !transit.hops || transit.hops.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6'>No transit hops reconstructed.</td></tr>";
+        return;
+      }
+
+      transit.hops.forEach(h => {
+        const tr = document.createElement('tr');
+        const net = h.network_intelligence || {};
+        const geoStr = [net.city, net.country].filter(Boolean).join(", ") || "Unknown";
+        tr.innerHTML = `
+          <td>${h.hop_number}</td>
+          <td><code>${h.from_ip || '-'}</code><br><small style="color:var(--text-muted)">${h.from_host || ''}</small></td>
+          <td>${h.by_host || '-'}</td>
+          <td>${geoStr} <br><small style="color:var(--text-muted)">ASN: ${net.asn || 'N/A'}</small></td>
+          <td>${h.delay_seconds !== null ? h.delay_seconds + 's' : '-'}</td>
+          <td>${(h.threat_tags || []).join(", ") || '<span style="color:var(--accent-emerald)">Clean</span>'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Load SVG map dynamically from API
+      if (currentAnalysisData) {
+        fetch("/api/map", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(currentAnalysisData)
+        })
+        .then(res => res.text())
+        .then(svg => {
+          document.getElementById('svg-map-container').innerHTML = svg;
+        })
+        .catch(() => {
+          document.getElementById('svg-map-container').innerHTML = "<div style='color:var(--text-muted); text-align:center;'>Transit map rendered via hops table.</div>";
+        });
+      }
+    }
+
+    function renderUrlsTab(urlReport) {
+      const tbody = document.getElementById('urls-table-body');
+      tbody.innerHTML = "";
+      if (!urlReport || !urlReport.extracted_urls || urlReport.extracted_urls.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>No hyperlinks extracted from message.</td></tr>";
+        return;
+      }
+
+      urlReport.extracted_urls.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><code>${u.defanged_url || u.raw_url}</code></td>
+          <td>${u.domain || '-'}</td>
+          <td><strong>${u.risk_score || 0}</strong> / 100</td>
+          <td>${(u.threat_flags || []).join(", ") || 'None'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderAttachmentsTab(attReport) {
+      const tbody = document.getElementById('attachments-table-body');
+      tbody.innerHTML = "";
+      if (!attReport || !attReport.scanned_attachments || attReport.scanned_attachments.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5'>No attachments present in evidence.</td></tr>";
+        return;
+      }
+
+      attReport.scanned_attachments.forEach(a => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${a.filename}</strong></td>
+          <td>${a.detected_mime_type || a.declared_mime_type || '-'}</td>
+          <td>${(a.size_bytes / 1024).toFixed(1)} KB</td>
+          <td><code style="font-size:0.75rem">${a.sha256_hash || '-'}</code></td>
+          <td>${(a.threat_indicators || []).join(", ") || '<span style="color:var(--accent-emerald)">Clean</span>'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderBECTab(bec) {
+      const container = document.getElementById('bec-findings-container');
+      container.innerHTML = "";
+      if (!bec || !bec.indicators || bec.indicators.length === 0) {
+        container.innerHTML = "<p style='color:var(--text-muted)'>Zero BEC or executive impersonation anomalies detected.</p>";
+        return;
+      }
+
+      bec.indicators.forEach(ind => {
+        const div = document.createElement('div');
+        div.className = 'stat-box';
+        div.style.marginBottom = '0.75rem';
+        div.innerHTML = `
+          <div class="title" style="color:var(--risk-high)">${ind.category || 'BEC INDICATOR'} (Severity: ${ind.severity})</div>
+          <div style="font-size:0.95rem; font-weight:600; margin:0.25rem 0;">${ind.title || ind.description}</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary);">${ind.evidence_context || ''}</div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderTimelineTab(timeline) {
+      const tbody = document.getElementById('timeline-table-body');
+      tbody.innerHTML = "";
+      if (!timeline || !timeline.events || timeline.events.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>No timeline events available.</td></tr>";
+        return;
+      }
+
+      timeline.events.forEach(e => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><code>${e.timestamp_utc || '-'}</code></td>
+          <td><strong>${e.event_type}</strong></td>
+          <td>${e.source_entity || '-'}</td>
+          <td>${e.description}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderRawTab(email) {
+      const headersViewer = document.getElementById('raw-headers-viewer');
+      const bodyViewer = document.getElementById('raw-body-viewer');
+
+      let headersStr = "";
+      (email.ordered_headers || []).forEach(h => {
+        headersStr += `${h[0]}: ${h[1]}\n`;
+      });
+      headersViewer.innerText = headersStr || "(No header data)";
+      bodyViewer.innerText = email.body_plain || email.body_html || "(Empty body)";
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById('tab-' + tabId).classList.add('active');
+    }
+
+    async function exportReport(format) {
+      if (!currentAnalysisData) return;
+      try {
+        const res = await fetch(`/api/export/${format}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(currentAnalysisData)
+        });
+        if (!res.ok) throw new Error("Export failed");
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const ext = format === 'pdf' ? 'pdf' : (format === 'stix' ? 'stix2.json' : (format === 'csv' ? 'csv' : 'json'));
+        a.download = `forensic_report_${Date.now()}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        alert("Export Error: " + err.message);
+      }
+    }
+  </script>
+</body>
+</html>

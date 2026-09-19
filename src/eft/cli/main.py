@@ -712,5 +712,47 @@ def verify_command(
         raise typer.Exit(code=1)
 
 
+@app.command("serve")
+def serve_command(
+    host: str = typer.Option("127.0.0.1", "--host", "-H", help="Host IP to bind web server"),
+    port: int = typer.Option(8000, "--port", "-p", help="Port number for web server"),
+    reload: bool = typer.Option(False, "--reload", help="Enable hot reload for development"),
+    open_browser: bool = typer.Option(
+        False, "--open", help="Automatically open browser upon server start"
+    ),
+) -> None:
+    """Launch the air-gapped forensic web analysis server and interactive dashboard."""
+    try:
+        import uvicorn
+
+        from eft.server.app import create_app
+
+        console.print()
+        console.rule("[bold cyan]EMAIL FORENSIC TOOL (EFT) — AIR-GAPPED WEB SERVER[/bold cyan]")
+        console.print(
+            f"[OK] [bold green]Server running at:[/bold green] [cyan]http://{host}:{port}[/cyan]"
+        )
+        console.print("[dim]Press Ctrl+C to stop the server.[/dim]\n")
+
+        if open_browser:
+            import threading
+            import time
+
+            def _open_tab() -> None:
+                time.sleep(1.0)
+                webbrowser.open(f"http://{host}:{port}")
+
+            threading.Thread(target=_open_tab, daemon=True).start()
+
+        app_instance = create_app()
+        uvicorn.run(app_instance, host=host, port=port, reload=reload)
+
+    except (typer.Exit, typer.Abort):
+        raise
+    except Exception as e:
+        err_console.print(f"[bold red]Server error:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()

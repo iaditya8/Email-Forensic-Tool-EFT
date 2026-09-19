@@ -346,6 +346,27 @@ class NetworkIntelligenceService:
                         if as_org_val is not None:
                             as_org_name = str(as_org_val)
 
+                if clean_ip in OFFLINE_IP_DATABASE:
+                    off = OFFLINE_IP_DATABASE[clean_ip]
+                    if not country_name or country_name == "Unknown Country":
+                        country_name = str(off.get("country")) if off.get("country") else None
+                    if not country_iso or country_iso == "XX":
+                        country_iso = (
+                            str(off.get("country_code")) if off.get("country_code") else None
+                        )
+                    if not city_name:
+                        city_name = str(off.get("city")) if off.get("city") else None
+                    if not region_name:
+                        region_name = str(off.get("region")) if off.get("region") else None
+                    if lat_val is None and off.get("latitude") is not None:
+                        lat_val = float(str(off.get("latitude")))
+                    if lon_val is None and off.get("longitude") is not None:
+                        lon_val = float(str(off.get("longitude")))
+                    if asn_num is None and off.get("asn") is not None:
+                        asn_num = int(str(off.get("asn")))
+                    if not as_org_name and off.get("as_org"):
+                        as_org_name = str(off.get("as_org"))
+
                 if country_name or city_name or asn_num:
                     intel = IPNetworkIntelligence(
                         ip=clean_ip,

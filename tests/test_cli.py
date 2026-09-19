@@ -24,13 +24,14 @@ def test_cli_version() -> None:
 
 def test_cli_help() -> None:
     """Verify `eft --help` lists all sub-commands."""
-    result = runner.invoke(app, ["--help"])
+    result = runner.invoke(app, ["--help"], color=False)
     assert result.exit_code == 0
     assert "scan" in result.stdout
     assert "report" in result.stdout
     assert "inspect" in result.stdout
     assert "map" in result.stdout
     assert "verify" in result.stdout
+    assert "serve" in result.stdout
 
 
 def test_cli_scan_benign_corporate() -> None:
