@@ -73,3 +73,6 @@ pull_request_template.md
 .env
 .env.local
 .env.*.local
+
+# Local Issue & PR documentation (excluded from remote)
+docs/issue_docs/
