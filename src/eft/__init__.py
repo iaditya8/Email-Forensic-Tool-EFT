@@ -1,3 +1,4 @@
+from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
 from eft.analysis.network_intelligence import NetworkIntelligenceService
@@ -22,7 +23,9 @@ from eft.ingestion.mime_decomposer import MIMETreeDecomposer
 from eft.ingestion.msg_parser import MSGParser
 from eft.models.canonical import (
     ARCChain,
+    AttachmentAnalysisReport,
     AttachmentMetadata,
+    AttachmentThreatAnalysis,
     BECAnalysisReport,
     BECIndicator,
     CanonicalEmail,
@@ -46,6 +49,7 @@ from eft.models.canonical import (
     SPFResult,
     TransitRoute,
     URLExtractionReport,
+    YARAMatchArtifact,
 )
 
 __version__ = "0.1.0"
@@ -66,6 +70,7 @@ __all__ = [
     "URLAnalyzer",
     "BECDetector",
     "ContentObfuscationDetector",
+    "AttachmentThreatScanner",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
@@ -77,6 +82,9 @@ __all__ = [
     "HiddenContentArtifact",
     "DecodedBlobArtifact",
     "ContentObfuscationReport",
+    "YARAMatchArtifact",
+    "AttachmentThreatAnalysis",
+    "AttachmentAnalysisReport",
     "FileTypeInspection",
     "IPNetworkIntelligence",
     "SPFResult",
