@@ -1,0 +1,42 @@
+Delivered-To: target@victim-org.com
+Received: from mail.bulletproof-vps.net (unknown [185.220.101.5])
+        by mx.victim-org.com with SMTP id phish123;
+        Tue, 16 Jan 2024 14:22:10 +0000 (UTC)
+Received-SPF: fail (victim-org.com: domain of alert@accounts-paypal.com does not designate 185.220.101.5 as permitted sender) client-ip=185.220.101.5;
+Authentication-Results: mx.victim-org.com;
+       dkim=fail reason="signature missing";
+       spf=fail (victim-org.com: domain of alert@accounts-paypal.com does not designate 185.220.101.5 as permitted sender) smtp.mailfrom=alert@accounts-paypal.com;
+       dmarc=fail (p=REJECT dis=REJECT) header.from=accounts-paypal.com
+From: "PayPal Security Center" <alert@accounts-paypal.com>
+To: <target@victim-org.com>
+Subject: ⚠️ Critical Security Alert: Your PayPal Account has been Suspended
+Date: Tue, 16 Jan 2024 14:22:00 +0000
+Message-ID: <phish-alert-9988@accounts-paypal.com>
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+
+<!DOCTYPE html>
+<html>
+<body>
+<h2>PayPal Urgent Account Verification</h2>
+<p>Dear Valued Customer,</p>
+<p>We detected unauthorized login attempts from an unknown device in Moscow, Russia. To prevent unauthorized fund withdrawals, your account has been temporarily locked.</p>
+
+<p>You must verify your login credentials immediately within 24 hours:</p>
+
+<!-- IDN Homoglyph attack pointing to lookalike Cyrillic domain with anchor text mismatch -->
+<p>
+  <a href="http://xn--pypal-4ve.com/login.php?user=target@victim-org.com">https://www.paypal.com/signin/verify-identity</a>
+</p>
+
+<!-- Raw IP URL with login keywords and URL shortener -->
+<p>Alternative backup portal: <a href="http://198.51.100.25/signin/account-recovery.php">http://198.51.100.25/signin/account-recovery.php</a></p>
+<p>Or use quick link: <a href="https://bit.ly/secure-paypal-recovery">https://bit.ly/secure-paypal-recovery</a></p>
+
+<!-- Tracking Beacon Pixel -->
+<img src="http://198.51.100.25/tracker.png?email=target@victim-org.com" width="1" height="1" style="display:none;" />
+
+<p>Thank you,<br/>PayPal Account Fraud Protection Department</p>
+</body>
+</html>

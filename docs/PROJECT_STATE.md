@@ -30,13 +30,36 @@
 
 ---
 
-## 4. Current Progress & Immediate Next Step
+## 4. Current Progress & Epics Summary
+* **Phase 1 (Epic 1): Ingestion & Core Parsing Engine** — ✅ 100% COMPLETE & MERGED (`dev`)
+  - Multi-Format Ingestion (.eml, .msg, .mbox)
+  - MIME Decomposition & Isolated Body Extraction
+  - Attachment Extraction & Cryptographic Fingerprinting (MD5, SHA-1, SHA-256)
+* **Phase 2 (Epic 2): Header & Authentication Analysis** — ✅ 100% COMPLETE & MERGED (`dev`)
+  - MTA Relay Hop & Transit Route Reconstruction
+  - GeoIP, ASN & Network Intelligence Enrichment
+  - Multi-Protocol Authentication Engine (SPF, DKIM, DMARC, ARC)
+* **Phase 3 (Epic 3): Content, Phishing & Threat Forensics** — ✅ 100% COMPLETE & MERGED (`dev`)
+  - URL Extraction, Defanging & IDN Homoglyph Detection
+  - Business Email Compromise (BEC) & Display Name Spoofing Detector
+  - Content Obfuscation & Hidden Text Analysis (Zero-width, hidden CSS, base64)
+  - Attachment Threat Scanner & YARA Rule Engine
+* **Phase 4 (Epic 4): Evidence Integrity, Chain of Custody & Reporting** — ✅ 100% COMPLETE & MERGED (`dev`)
+  - Cryptographic Evidence Ledger & Chain of Custody Manifest
+  - Visual Chronological Timeline Generator with Anti-Forensic Anomaly Detection
+  - Multi-Format Forensic Exporter (PDF, JSON, CSV IoCs, STIX 2.1 Bundles)
+* **Phase 5 (Epic 5): UI/UX & Visualization Dashboard** — ✅ 100% COMPLETE & MERGED (`dev`)
+  - Dual-Pane Air-Gapped Email & Header Inspector UI with HTML Sanitizer
+  - Interactive Hop & Transit Map Visualizer (Offline Vector World Map, Geodesic Arcs)
+  - Composite Threat Scorer (0-100) & Risk Indicator Card (Speedometer Dial, Factor Trees)
+* **Step 1: Forensic Sample Corpus & Performance Benchmarking** — ✅ 100% COMPLETE & MERGED (`dev`) (PR #39)
+  - Realistic Corpus: Benign, Phishing Homoglyph, BEC Wire Fraud, Malware Double-Ext, Obfuscation Zero-Width, Transit Tor Anomaly, Mixed MBOX Archive.
+  - End-to-End Pipeline Integration Test Suite (`tests/test_corpus_integration.py`).
+  - Latency, Scalability, and Throughput Benchmarks (`tests/test_benchmarks.py`).
 
-* **Phase 1 (Epic 1):** Ingestion & Core Parsing Engine
-  * **Current Task to Execute:** **Task 1.1: Multi-Format Email Ingestion Engine**
-  * **Target Branch to Create:** `feature/phase1-ingestion/task1.1-email-ingestion`
-  * **Scope:**
-    - Build `src/eft/ingestion/` parser supporting `.eml` (RFC 822/5322), `.msg` (Outlook), and `.mbox` in strict read-only mode.
-    - Implement `CanonicalEmail` model.
-    - Write unit tests in `tests/test_ingestion.py`.
-    - Review task output & PR description before merging into `dev`.
+---
+
+## 5. Next Steps (In Directed Order)
+1. ⏳ **Step 2: v1.0.0 Production Release & Merge into `main`**
+2. ⏳ **Step 3: Unified CLI Command-Line Suite (`eft`)**
+3. ⏳ **Step 4: Unified Air-Gapped Web Server (`eft serve`)**
