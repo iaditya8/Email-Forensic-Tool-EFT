@@ -1,0 +1,33 @@
+From alice@example.com Mon Jan 15 09:00:00 2024
+From: "Alice Analyst" <alice@example.com>
+To: "Bob Reviewer" <bob@example.com>
+Subject: Team Sync Agenda
+Date: Mon, 15 Jan 2024 09:00:00 +0000
+Message-ID: <mbox-msg-01@example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Hi Bob, here is the agenda for our daily standup.
+
+From attacker@spoofed-bank.com Tue Jan 16 10:15:00 2024
+From: "Bank Security" <attacker@spoofed-bank.com>
+To: "Target User" <target@example.com>
+Subject: ⚠️ Immediate Action Required: Verify Account
+Date: Tue, 16 Jan 2024 10:15:00 +0000
+Message-ID: <mbox-msg-02@spoofed-bank.com>
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+<p>Please log in immediately: <a href="http://198.51.100.99/login.php">https://secure.bank.com/login</a></p>
+
+From ceo@impersonated-corp.com Wed Jan 17 11:30:00 2024
+From: "CEO John Doe" <ceo@impersonated-corp.com>
+Reply-To: <attacker-wire@freemail.com>
+To: "Accountant" <accountant@example.com>
+Subject: URGENT: Wire Transfer Settlement
+Date: Wed, 17 Jan 2024 11:30:00 +0000
+Message-ID: <mbox-msg-03@impersonated-corp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Please execute a wire transfer of $50,000 immediately today.
