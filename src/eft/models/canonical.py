@@ -373,6 +373,50 @@ class BECAnalysisReport(BaseModel):
     )
 
 
+class HiddenContentArtifact(BaseModel):
+    """Forensic artifact capturing hidden, invisible, or concealed text in email content."""
+
+    technique: (
+        str  # CSS_DISPLAY_NONE, CSS_ZERO_FONT, CSS_TRANSPARENT_COLOR, CSS_SAME_COLOR_BG, etc.
+    )
+    hidden_text: str
+    element_tag: str = "span"
+    raw_style_or_attribute: str = ""
+    character_count: int = 0
+    snippet: str = ""
+
+
+class DecodedBlobArtifact(BaseModel):
+    """Forensic artifact representing an obfuscated data blob extracted and decoded in-memory."""
+
+    encoding_type: str  # BASE64, HEX, URL_ENCODED, HTML_ENTITIES, UNICODE_ESCAPE
+    raw_blob: str
+    decoded_text: Optional[str] = None
+    decoded_bytes_sha256: str = ""
+    source_location: str = "html_body"
+    extracted_urls: List[str] = Field(default_factory=list)
+    suspicious_indicators: List[str] = Field(
+        default_factory=list,
+        description="Threat flags found inside decoded payload (e.g., 'PROMPT_INJECTION_TRIGGER', 'POWERSHELL_CMD')",
+    )
+
+
+class ContentObfuscationReport(BaseModel):
+    """Comprehensive forensic report on hidden text, zero-width characters, and decoded obfuscated blobs."""
+
+    total_hidden_artifacts: int = 0
+    total_decoded_blobs: int = 0
+    hidden_text_char_count: int = 0
+    has_zero_width_chars: bool = False
+    has_prompt_injection: bool = False
+    has_script_payload: bool = False
+    overall_obfuscation_risk: str = "CLEAN"  # CLEAN, SUSPICIOUS, HIGH_RISK_OBFUSCATION
+    risk_score: float = 0.0  # 0.0 to 100.0
+    hidden_artifacts: List[HiddenContentArtifact] = Field(default_factory=list)
+    decoded_blobs: List[DecodedBlobArtifact] = Field(default_factory=list)
+    flags: List[str] = Field(default_factory=list)
+
+
 class CanonicalEmail(BaseModel):
     """Normalized, court-defensible representation of an ingested email."""
 
@@ -414,6 +458,10 @@ class CanonicalEmail(BaseModel):
     bec_report: Optional[BECAnalysisReport] = Field(
         default=None,
         description="Business Email Compromise (BEC), display name spoofing, and cousin domain analysis report",
+    )
+    obfuscation_report: Optional[ContentObfuscationReport] = Field(
+        default=None,
+        description="Forensic content obfuscation, hidden text, and decoded blob analysis report",
     )
 
     # Message bodies

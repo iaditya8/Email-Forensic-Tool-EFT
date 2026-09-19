@@ -1,6 +1,7 @@
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
 from eft.analysis.network_intelligence import NetworkIntelligenceService
+from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.analysis.url_analyzer import URLAnalyzer
 from eft.core.exceptions import (
@@ -25,6 +26,8 @@ from eft.models.canonical import (
     BECAnalysisReport,
     BECIndicator,
     CanonicalEmail,
+    ContentObfuscationReport,
+    DecodedBlobArtifact,
     DKIMSignatureArtifact,
     DMARCResult,
     EmailAuthenticationReport,
@@ -32,6 +35,7 @@ from eft.models.canonical import (
     ExtractedURL,
     FileTypeInspection,
     HeaderDecomposition,
+    HiddenContentArtifact,
     IngestionResult,
     IPNetworkIntelligence,
     IsolatedBody,
@@ -61,6 +65,7 @@ __all__ = [
     "AuthenticationVerifier",
     "URLAnalyzer",
     "BECDetector",
+    "ContentObfuscationDetector",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
@@ -69,6 +74,9 @@ __all__ = [
     "URLExtractionReport",
     "BECIndicator",
     "BECAnalysisReport",
+    "HiddenContentArtifact",
+    "DecodedBlobArtifact",
+    "ContentObfuscationReport",
     "FileTypeInspection",
     "IPNetworkIntelligence",
     "SPFResult",
