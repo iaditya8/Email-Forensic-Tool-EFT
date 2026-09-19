@@ -7,6 +7,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from eft.models.timeline import ForensicTimelineReport
+
 
 class SourceFileInfo(BaseModel):
     """Cryptographic and filesystem metadata for the source evidence file."""
@@ -515,6 +517,10 @@ class CanonicalEmail(BaseModel):
     attachment_threat_report: Optional[AttachmentAnalysisReport] = Field(
         default=None,
         description="Forensic static threat analysis and YARA scanning report for attachments",
+    )
+    timeline_report: Optional[ForensicTimelineReport] = Field(
+        default=None,
+        description="Synthesized chronological timeline, delay metrics, and anomaly detection report",
     )
 
     # Message bodies

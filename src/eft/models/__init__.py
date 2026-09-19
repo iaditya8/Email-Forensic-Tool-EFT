@@ -16,6 +16,12 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.timeline import (
+    ForensicTimelineReport,
+    TimelineAnomalyType,
+    TimelineEvent,
+    TimelineEventType,
+)
 
 __all__ = [
     "SourceFileInfo",
@@ -30,4 +36,8 @@ __all__ = [
     "EvidenceManifest",
     "CustodyEvent",
     "EvidenceLedger",
+    "TimelineEventType",
+    "TimelineAnomalyType",
+    "TimelineEvent",
+    "ForensicTimelineReport",
 ]
