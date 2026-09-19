@@ -303,6 +303,47 @@ class EmailAuthenticationReport(BaseModel):
     )
 
 
+class ExtractedURL(BaseModel):
+    """Forensic record of a URL extracted from email headers, HTML DOM, or body content."""
+
+    url: str
+    defanged_url: str
+    anchor_text: Optional[str] = None
+    source_location: str = (
+        "body_text"  # html_href, html_src, html_action, html_body_text, plain_body_text, header
+    )
+    domain: str = ""
+    scheme: str = "http"
+    is_anchor_mismatch: bool = False
+    anchor_domain: Optional[str] = None
+    is_idn_homograph: bool = False
+    punycode_domain: Optional[str] = None
+    unicode_domain: Optional[str] = None
+    homoglyph_details: List[str] = Field(default_factory=list)
+    is_ip_host: bool = False
+    is_shortener: bool = False
+    is_suspicious_tld: bool = False
+    risk_flags: List[str] = Field(
+        default_factory=list,
+        description="Triggered threat indicators (e.g. 'ANCHOR_URL_MISMATCH', 'IDN_HOMOGRAPH_ATTACK')",
+    )
+    risk_score: float = 0.0  # 0.0 to 100.0
+
+
+class URLExtractionReport(BaseModel):
+    """Comprehensive URL and hyperlink forensic threat report."""
+
+    total_urls_found: int = 0
+    unique_domains: List[str] = Field(default_factory=list)
+    urls: List[ExtractedURL] = Field(default_factory=list)
+    anchor_mismatches_count: int = 0
+    homographs_count: int = 0
+    ip_urls_count: int = 0
+    shorteners_count: int = 0
+    overall_url_risk: str = "CLEAN"  # CLEAN, SUSPICIOUS, MALICIOUS
+    risk_flags: List[str] = Field(default_factory=list)
+
+
 class CanonicalEmail(BaseModel):
     """Normalized, court-defensible representation of an ingested email."""
 
@@ -336,6 +377,10 @@ class CanonicalEmail(BaseModel):
     authentication_report: Optional[EmailAuthenticationReport] = Field(
         default=None,
         description="Comprehensive forensic evaluation of SPF, DKIM, DMARC, and ARC authentication",
+    )
+    url_report: Optional[URLExtractionReport] = Field(
+        default=None,
+        description="Forensic URL extraction, defanging, anchor mismatch, and homograph detection report",
     )
 
     # Message bodies
