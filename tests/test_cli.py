@@ -225,3 +225,21 @@ def test_cli_error_handling_missing_file() -> None:
     """Verify proper CLI error handling when evidence file does not exist."""
     res = runner.invoke(app, ["scan", "non_existent_file.eml"])
     assert res.exit_code != 0
+
+
+def test_cli_scan_with_ioc_and_config() -> None:
+    """Verify `eft scan` operates with --ioc-file and --config parameters."""
+    sample = CORPUS_DIR / "03_bec_wire_fraud.eml"
+    res = runner.invoke(
+        app,
+        [
+            "scan",
+            str(sample),
+            "--ioc-file",
+            "iocs.txt",
+            "--config",
+            "watchlist.json",
+        ],
+    )
+    assert res.exit_code == 0
+    assert "BEC" in res.stdout or "RISK" in res.stdout

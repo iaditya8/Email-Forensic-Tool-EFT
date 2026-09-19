@@ -7,7 +7,7 @@ name = "eft"
 version = "1.0.0"
 description = "Enterprise-Grade Digital Forensics & Incident Response (DFIR) Email Analysis Engine"
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 license = "MIT"
 authors = [
     { name = "Aditya" }
@@ -23,6 +23,7 @@ dependencies = [
     "typer>=0.12.0",
     "reportlab>=4.1.0",
     "stix2>=3.0.1",
+    "maxminddb>=2.6.0",
 ]
 
 [project.scripts]
