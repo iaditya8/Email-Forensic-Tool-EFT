@@ -197,3 +197,169 @@ This document serves as the master source for creating GitHub Issues and trackin
   - [ ] REST API endpoint `POST /api/osint/lookup` added to FastAPI router.
   - [ ] Web dashboard includes a dedicated OSINT Inspector tab with real-time analysis results.
 
+---
+
+## Epic 7 (Phase 7 / v1.2.0): File, Binary & Metadata Forensics Engine
+
+### Task 7.1: File Magic Byte & True Extension Mismatch Engine
+* **What needs to be built, and why:**
+  * Build a standalone binary file identification engine `FileArtifactAnalyzer` that reads raw magic byte headers, validates signatures against a comprehensive database of 500+ file formats (PE, ELF, Mach-O, OLE, PDF, ZIP, 7z, GZ, Images, Media), and detects double-extension or header spoofing.
+  * *Why:* Attackers disguise malicious binaries as documents, images, or archives to evade email and endpoint filters.
+* **Done when:**
+  - [ ] True MIME type and file format identified independently of file extension.
+  - [ ] Forensic alerts raised when file extension does not match true binary magic bytes.
+  - [ ] Computes MD5, SHA-1, SHA-256, and SHA-512 hashes and integrates with ISO/IEC 27037 Evidence Ledger.
+
+### Task 7.2: EXIF & Embedded Document Metadata Extractor
+* **What needs to be built, and why:**
+  * Build an artifact inspector that extracts EXIF metadata from images (JPEG, PNG, TIFF) including camera make/model, GPS coordinates, timestamps, and author metadata from Office documents (`.docx`, `.xlsx`, `.pptx`) and PDFs (creator, producer, revision history).
+  * *Why:* Embedded metadata establishes evidence provenance, geolocation of creation, and author attribution in digital investigations.
+* **Done when:**
+  - [ ] Extracts GPS coordinates with decimal latitude/longitude and Google Maps link.
+  - [ ] Extracts author, last modified user, creation/modification timestamps, and revision counts.
+  - [ ] Sanitizes or highlights suspicious metadata anomalies (e.g., hidden script streams, PDF `/Launch` or `/JavaScript` actions).
+
+### Task 7.3: Static PE & OLE Binary Analyzer
+* **What needs to be built, and why:**
+  * Build a static binary analysis module that parses Windows Portable Executable (PE) headers, evaluates section names (`.text`, `.data`, `.rsrc`), computes Shannon Entropy per section, extracts imported DLLs and API functions, and extracts VBA macros from legacy OLE compound files (`.doc`, `.xls`).
+  * *Why:* High entropy (>7.2) reveals packed or encrypted ransomware, while suspicious API imports (e.g., `VirtualAlloc`, `WriteProcessMemory`, `CreateRemoteThread`) indicate process injection payloads.
+* **Done when:**
+  - [ ] Shannon Entropy computed per PE section with high-entropy alerts.
+  - [ ] Suspicious Windows API imports flagged for process hollowing and keylogging.
+  - [ ] VBA macro extractor extracts and deobfuscates script code from OLE files.
+
+---
+
+## Epic 8 (Phase 8 / v1.3.0): Network PCAP & Packet Forensics Analyzer
+
+### Task 8.1: Offline PCAP/PCAPNG Stream Parser & Protocol Dissector
+* **What needs to be built, and why:**
+  * Build a high-performance offline packet capture analyzer `NetworkPCAPAnalyzer` capable of reading `.pcap` and `.pcapng` files without external dependencies like Wireshark.
+  * Reconstructs TCP/UDP streams, tracks IP conversations, calculates flow latency, and maps IP geolocations via local MaxMind GeoLite2 MMDB.
+  * *Why:* Network packet captures represent ground-truth evidence of data exfiltration, lateral movement, and command-and-control (C2) communication.
+* **Done when:**
+  - [ ] Parses IPv4/IPv6, TCP, UDP, ICMP, DNS, HTTP, and TLS handshake packets.
+  - [ ] Chronologically reconstructs conversations and computes total bytes transferred per flow.
+  - [ ] Enriches external IP addresses with GeoIP, ASN, and cloud provider tags.
+
+### Task 8.2: DNS Exfiltration, Tunneling & Fast-Flux Detector
+* **What needs to be built, and why:**
+  * Build a specialized DNS threat inspection engine that evaluates query length, subdomain entropy, high-frequency query intervals, and TXT record payload sizes.
+  * *Why:* Threat actors use DNS tunneling (e.g. `iodine`, `dnscat2`) to smuggle data through restricted corporate firewalls.
+* **Done when:**
+  - [ ] High-entropy subdomains (>4.5 Shannon entropy) flagged as potential DNS exfiltration.
+  - [ ] Excessive query volumes to single root domains flagged for DNS C2 tunneling.
+  - [ ] Fast-flux domain switching (rapidly changing A records with low TTLs) detected.
+
+### Task 8.3: Cleartext Credential & High-Risk Protocol Extraction
+* **What needs to be built, and why:**
+  * Build a security inspector that scans unencrypted network streams (HTTP, FTP, Telnet, SMTP, POP3, IMAP) for transmitted cleartext passwords, authentication tokens, API keys, and unencrypted file transfers.
+  * *Why:* Identifies immediate credential compromise and data leakage incidents.
+* **Done when:**
+  - [ ] Extracts HTTP Basic Auth, FTP `USER`/`PASS`, and SMTP `AUTH LOGIN` credentials.
+  - [ ] Flags unencrypted sensitive transmissions and defangs leaked secrets in forensic reports.
+
+---
+
+## Epic 9 (Phase 9 / v1.4.0): Windows EVTX & Cloud Event Log Forensics
+
+### Task 9.1: Binary EVTX Parser & Sysmon Event Correlation
+* **What needs to be built, and why:**
+  * Build a fast parser `WindowsLogAnalyzer` for binary Windows Event Log files (`.evtx`) with automated filtering and correlation for Microsoft Sysmon and Windows Security events.
+  * *Why:* Windows event logs provide the definitive timeline of operating system actions, process spawns, and attacker activity.
+* **Done when:**
+  - [ ] Parses raw `.evtx` files into structured JSON event streams without requiring Windows host APIs.
+  - [ ] Correlates Sysmon Event ID 1 (Process Creation), Event ID 3 (Network Connection), Event ID 7 (Image Loaded), and Event ID 11 (File Create).
+  - [ ] Flags suspicious parent-child process relationships (e.g., `winword.exe` spawning `powershell.exe` or `cmd.exe`).
+
+### Task 9.2: Logon Anomaly, Privilege Escalation & Persistence Timeline
+* **What needs to be built, and why:**
+  * Build an anomaly detection engine that tracks Windows Security Event IDs 4624 (Successful Logon), 4625 (Failed Logon / Brute Force), 4672 (Special Privileges Assigned), 7045 (New Service Installed), and 4697 (Service Installation Attempt).
+  * *Why:* Detects brute-force credential stuffing, Pass-the-Hash, Golden Ticket abuses, and persistence mechanisms.
+* **Done when:**
+  - [ ] Correlates logon types (Type 2: Interactive, Type 3: Network, Type 10: RDP) and flags abnormal hours or brute-force spikes.
+  - [ ] Detects persistence mechanisms (new service creation, scheduled task creation Event ID 4698).
+  - [ ] Synthesizes events into the unified UTC Master Timeline.
+
+### Task 9.3: Cloud Audit Log Ingestion (M365 & Google Workspace)
+* **What needs to be built, and why:**
+  * Build an ingestion parser for cloud audit logs including Microsoft 365 Unified Audit Logs (UAL) and Google Workspace Admin audit records in JSON/CSV formats.
+  * *Why:* Modern attacks target cloud mailboxes, OAuth app grants, and inbox forwarding rules.
+* **Done when:**
+  - [ ] Ingests M365 UAL records and flags suspicious inbox forwarding rules (`New-InboxRule`), mailbox permissions changes (`Add-MailboxPermission`), and anomalous multi-geo logins.
+  - [ ] Ingests Google Workspace audit trails and correlates admin actions with threat events.
+
+---
+
+## Epic 10 (Phase 10 / v1.5.0): Memory & Volatile Process Forensics
+
+### Task 10.1: Memory Dump Ingestion & High-Speed Binary String Extractor
+* **What needs to be built, and why:**
+  * Build a memory triage engine `MemoryArtifactAnalyzer` capable of reading raw RAM acquisition images (`.raw`, `.dmp`, `.vmem`, `.bin`) and extracting ASCII and UTF-16LE strings at high speed using optimized chunking.
+  * *Why:* Advanced malware operates fileless in memory without saving artifacts to disk.
+* **Done when:**
+  - [ ] Ingests multi-gigabyte memory dumps in streaming chunks with minimal RAM overhead.
+  - [ ] Computes cryptographic acquisition hashes and records custody manifest.
+  - [ ] High-speed extraction of formatted strings with minimum length thresholds.
+
+### Task 10.2: In-Memory Regex Pattern & IoC Matcher
+* **What needs to be built, and why:**
+  * Build an in-memory pattern matching engine that scans RAM strings for IPv4/IPv6 addresses, URLs, email addresses, crypto wallets (Bitcoin/Ethereum), JWT tokens, Base64 shellcode headers, and private keys.
+  * *Why:* In-memory scraping uncovers active C2 server connections, decrypted payloads, and injected credentials.
+* **Done when:**
+  - [ ] Regex scanner identifies and extracts network IoCs, unencrypted credentials, and API secrets.
+  - [ ] Cross-references extracted hashes against `iocs.txt` and IP addresses against MaxMind GeoIP.
+
+### Task 10.3: Volatile Memory YARA Scanner & Process Anomaly Attribution
+* **What needs to be built, and why:**
+  * Integrate the YARA rule engine directly with the memory triage pipeline to match known threat actor signatures (Cobalt Strike, Meterpreter, Mimikatz, Lumma Stealer) across memory blocks.
+  * *Why:* Automates detection of in-memory beacons, reflective DLL injection, and credential dumping utilities.
+* **Done when:**
+  - [ ] Compiles and executes memory-specific YARA rules across memory dump blocks.
+  - [ ] Generates forensic threat attribution findings and integrates with the composite Threat Scorer.
+
+---
+
+## Epic 11 (Phase 11 / v2.0.0): Unified Master Forensics Workstation & Multi-Modal Dashboard
+
+### Task 11.1: Master Unified CLI Command Routing
+* **What needs to be built, and why:**
+  * Build a unified master CLI routing interface under `eft` (or alias `dfir`) that seamlessly routes subcommands:
+    * `eft email <scan|report|inspect|map>`
+    * `eft file <inspect|entropy|exif>`
+    * `eft osint <lookup|domain|ip>`
+    * `eft pcap <analyze|dns|creds>`
+    * `eft log <evtx|sysmon|m365>`
+    * `eft mem <scan|strings|yara>`
+    * `eft serve [--port 8000]`
+  * *Why:* Gives digital investigators a single, cohesive command-line suite for all forensic domains.
+* **Done when:**
+  - [ ] Master CLI routes all subcommands with consistent `--json`, `--report`, and `--output` options.
+  - [ ] Rich terminal UI renders standardized color-coded tables and progress indicators across all modules.
+
+### Task 11.2: Multi-Tool Web Dashboard Workspace Switcher
+* **What needs to be built, and why:**
+  * Expand the `eft serve` web dashboard into a multi-modal DFIR Workstation with a top navigation switcher:
+    * **Email DFIR Workstation**
+    * **File & Binary Inspector**
+    * **OSINT & Domain Triage**
+    * **Network PCAP Analyzer**
+    * **Windows & Cloud Log Correlator**
+    * **Memory Dump Scanner**
+  * *Why:* Provides an all-in-one, air-gapped web platform for both desktop and mobile phone browsers.
+* **Done when:**
+  - [ ] Single-page web dashboard supports seamless tab switching between all 6 forensic modules.
+  - [ ] Air-gapped architecture preserved with zero external CDN dependencies.
+  - [ ] Full session persistence across browser refreshes for all tools.
+
+### Task 11.3: Cross-Module Unified Evidence Ledger & Master Case Report
+* **What needs to be built, and why:**
+  * Build a cross-module case aggregation engine that merges artifacts from Email, File, Network, Log, and Memory into a single **Master Case Investigation Report**.
+  * Merges all timestamps into a single comprehensive UTC Chronological Timeline, computes an overarching Master Case Risk Score, and produces court-defensible exports.
+  * *Why:* Court admissibility requires demonstrating the complete, unbroken chain of events connecting the initial lure to execution, network egress, and memory persistence.
+* **Done when:**
+  - [ ] Aggregates multiple evidence sources under a single Case ID and Examiner manifest.
+  - [ ] Generates unified Court-Admissible PDF, STIX 2.1 Threat Bundle, JSON, and CSV IoC packages.
+  - [ ] Pre- and post-analysis multi-hashing validates 100% zero-byte mutation across all evidence types.
+
+
