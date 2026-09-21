@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [project]
 name = "eft"
-version = "1.0.0"
+version = "1.3.0"
 description = "Enterprise-Grade Digital Forensics & Incident Response (DFIR) Email Analysis Engine"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"

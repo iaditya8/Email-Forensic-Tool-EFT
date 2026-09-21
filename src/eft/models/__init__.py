@@ -44,6 +44,18 @@ from eft.models.osint import (
     SPFPosture,
     SPFStrictness,
 )
+from eft.models.pcap import (
+    AppProtocol,
+    DNSPacketInfo,
+    DNSResourceRecord,
+    HTTPRequestInfo,
+    HTTPResponseInfo,
+    NetworkFlow,
+    PacketRecord,
+    PCAPAnalysisReport,
+    TLSHandshakeInfo,
+    TransportProtocol,
+)
 from eft.models.pe_ole import (
     BinaryStaticReport,
     EntropyLevel,
@@ -124,4 +136,14 @@ __all__ = [
     "VBAMacroStream",
     "OLEAnalysisReport",
     "BinaryStaticReport",
+    "TransportProtocol",
+    "AppProtocol",
+    "DNSResourceRecord",
+    "DNSPacketInfo",
+    "HTTPRequestInfo",
+    "HTTPResponseInfo",
+    "TLSHandshakeInfo",
+    "PacketRecord",
+    "NetworkFlow",
+    "PCAPAnalysisReport",
 ]

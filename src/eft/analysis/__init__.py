@@ -10,6 +10,7 @@ from eft.analysis.metadata_extractor import MetadataExtractor
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.ole_analyzer import OLEMacroAnalyzer
+from eft.analysis.pcap_analyzer import NetworkPCAPAnalyzer
 from eft.analysis.pe_analyzer import PEBinaryAnalyzer
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.analysis.threat_scorer import ThreatScorer
@@ -30,4 +31,5 @@ __all__ = [
     "PEBinaryAnalyzer",
     "OLEMacroAnalyzer",
     "BinaryStaticAnalyzer",
+    "NetworkPCAPAnalyzer",
 ]

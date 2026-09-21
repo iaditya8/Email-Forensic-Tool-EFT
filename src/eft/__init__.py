@@ -8,6 +8,7 @@ from eft.analysis.metadata_extractor import MetadataExtractor
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.ole_analyzer import OLEMacroAnalyzer
+from eft.analysis.pcap_analyzer import NetworkPCAPAnalyzer
 from eft.analysis.pe_analyzer import PEBinaryAnalyzer
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.analysis.threat_scorer import ThreatScorer
@@ -92,6 +93,18 @@ from eft.models.osint import (
     SPFPosture,
     SPFStrictness,
 )
+from eft.models.pcap import (
+    AppProtocol,
+    DNSPacketInfo,
+    DNSResourceRecord,
+    HTTPRequestInfo,
+    HTTPResponseInfo,
+    NetworkFlow,
+    PacketRecord,
+    PCAPAnalysisReport,
+    TLSHandshakeInfo,
+    TransportProtocol,
+)
 from eft.models.pe_ole import (
     BinaryStaticReport,
     EntropyLevel,
@@ -125,7 +138,7 @@ from eft.ui.map_visualizer import TransitMapVisualizer
 from eft.ui.sanitizer import HTMLSanitizer
 from eft.ui.threat_card import ThreatCardRenderer
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 
 
 __all__ = [
@@ -150,6 +163,7 @@ __all__ = [
     "PEBinaryAnalyzer",
     "OLEMacroAnalyzer",
     "BinaryStaticAnalyzer",
+    "NetworkPCAPAnalyzer",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
@@ -239,4 +253,14 @@ __all__ = [
     "VBAMacroStream",
     "OLEAnalysisReport",
     "BinaryStaticReport",
+    "TransportProtocol",
+    "AppProtocol",
+    "DNSResourceRecord",
+    "DNSPacketInfo",
+    "HTTPRequestInfo",
+    "HTTPResponseInfo",
+    "TLSHandshakeInfo",
+    "PacketRecord",
+    "NetworkFlow",
+    "PCAPAnalysisReport",
 ]
