@@ -1,6 +1,7 @@
 from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
+from eft.analysis.domain_osint import DomainOSINTAnalyzer
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
@@ -57,6 +58,19 @@ from eft.models.custody import (
     CustodyEvent,
     EvidenceLedger,
     EvidenceManifest,
+)
+from eft.models.osint import (
+    BIMIPosture,
+    BrandMatchResult,
+    DKIMDiscovery,
+    DMARCEnforcement,
+    DMARCPosture,
+    DNSAuthPosture,
+    DomainCategory,
+    DomainOSINTReport,
+    MXRecordInfo,
+    SPFPosture,
+    SPFStrictness,
 )
 from eft.models.threat import (
     CompositeRiskReport,
@@ -155,6 +169,18 @@ __all__ = [
     "EmailInspector",
     "TransitMapVisualizer",
     "HTMLSanitizer",
+    "DomainOSINTAnalyzer",
+    "DomainOSINTReport",
+    "DomainCategory",
+    "SPFStrictness",
+    "DMARCEnforcement",
+    "MXRecordInfo",
+    "SPFPosture",
+    "DMARCPosture",
+    "DKIMDiscovery",
+    "BIMIPosture",
+    "DNSAuthPosture",
+    "BrandMatchResult",
     "__version__",
 ]
 
