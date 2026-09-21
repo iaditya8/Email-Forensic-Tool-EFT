@@ -53,6 +53,8 @@ from eft.ingestion.header_decomposer import HeaderDecomposer
 from eft.models.canonical import CanonicalEmail
 from eft.models.osint import DomainOSINTReport
 from eft.models.threat import CompositeRiskReport, RiskSeverity
+from eft.reporting.case_aggregator import MasterCaseAggregator
+from eft.reporting.case_exporter import MasterCaseExporter
 from eft.reporting.custody import ChainOfCustodyManager
 from eft.reporting.exporter import ForensicReportExporter
 from eft.reporting.timeline import TimelineGenerator
@@ -98,6 +100,11 @@ mem_app = typer.Typer(
     help="Memory forensics: RAM dump ingestion, high-speed string extraction, regex IoCs, YARA scans",
     no_args_is_help=True,
 )
+case_app = typer.Typer(
+    name="case",
+    help="Master Case forensics: multi-evidence cross-module correlation, unified timeline, IoCs, and court reports",
+    no_args_is_help=True,
+)
 
 # Mount Sub-Apps onto Root CLI
 app.add_typer(email_app, name="email")
@@ -106,6 +113,7 @@ app.add_typer(osint_app, name="osint")
 app.add_typer(pcap_app, name="pcap")
 app.add_typer(log_app, name="log")
 app.add_typer(mem_app, name="mem")
+app.add_typer(case_app, name="case")
 
 console = Console()
 err_console = Console(stderr=True)
@@ -1765,6 +1773,197 @@ def verify_command(
     except Exception as e:
         err_console.print(f"[bold red]Verification error:[/bold red] {e}")
         raise typer.Exit(code=1)
+
+
+# ===========================================================================
+# MASTER CASE SUBCOMMANDS (Task 11.3)
+# ===========================================================================
+
+
+@case_app.command("analyze")
+def case_analyze_command(
+    files: List[Path] = typer.Argument(
+        ...,
+        help="Paths to multi-modal evidence files to aggregate and correlate",
+        exists=True,
+    ),
+    case_id: str = typer.Option("CASE-2026-DFIR", "--case-id", "-c", help="Case Reference ID"),
+    examiner: str = typer.Option(
+        "Forensic Examiner", "--examiner", "-e", help="Lead Forensic Examiner"
+    ),
+    agency: Optional[str] = typer.Option(None, "--agency", "-a", help="Investigating Agency"),
+    title: Optional[str] = typer.Option(None, "--title", "-t", help="Case Title"),
+    json_output: bool = typer.Option(False, "--json", help="Output Master Case report as JSON"),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Destination file path for export"
+    ),
+    format: str = typer.Option(
+        "table", "--format", "-f", help="Output format: table, json, pdf, stix, csv"
+    ),
+) -> None:
+    """Ingest multiple evidence files across domains, run cross-module correlation, and build Master Case Report."""
+    try:
+        aggregator = MasterCaseAggregator(
+            case_id=case_id,
+            examiner_name=examiner,
+            examiner_agency=agency,
+            case_title=title,
+        )
+
+        with console.status("[bold cyan]Ingesting & analyzing multi-modal evidence items..."):
+            for f_path in files:
+                aggregator.add_evidence_file(file_path=f_path)
+            master_report = aggregator.correlate_and_build_report()
+
+        if json_output or format.lower() == "json":
+            json_str = MasterCaseExporter.export_json(master_report, output_path=output)
+            if not output:
+                typer.echo(json_str)
+            else:
+                console.print(
+                    f"[bold green][OK] Master Case JSON report saved to:[/bold green] [cyan]{output}[/cyan]"
+                )
+            return
+
+        if format.lower() in ["pdf", "stix", "csv"]:
+            if not output:
+                err_console.print(
+                    f"[bold red]Error: --output destination path is required when exporting as {format.upper()}.[/bold red]"
+                )
+                raise typer.Exit(code=1)
+
+            if format.lower() == "pdf":
+                MasterCaseExporter.export_pdf(master_report, output_path=output)
+            elif format.lower() == "stix":
+                MasterCaseExporter.export_stix(master_report, output_path=output)
+            elif format.lower() == "csv":
+                MasterCaseExporter.export_csv(master_report, output_path=output)
+
+            console.print(
+                f"[bold green][OK] Master Case {format.upper()} report generated at:[/bold green] [cyan]{output}[/cyan]"
+            )
+            return
+
+        # Table Output
+        console.print()
+        console.rule(f"[bold cyan]MASTER DIGITAL FORENSIC CASE REPORT — {case_id}[/bold cyan]")
+        console.print(
+            f"[dim]Title:[/dim] [bold white]{master_report.case_title}[/bold white] | [dim]Examiner:[/dim] [white]{master_report.examiner_name}[/white]"
+        )
+        console.print(
+            f"[dim]Master Composite Risk Score:[/dim] [bold {'red' if master_report.overall_composite_risk_score >= 50 else 'green'}]{master_report.overall_composite_risk_score:.1f} / 100 ({master_report.overall_risk_level})[/bold {'red' if master_report.overall_composite_risk_score >= 50 else 'green'}]"
+        )
+        console.print(f"\n[bold]Executive Summary:[/bold] {master_report.executive_summary}\n")
+
+        # 1. Evidence Inventory
+        t_ev = Table(title="Evidence Items & Cryptographic Immutability Ledger", expand=True)
+        t_ev.add_column("Item ID", style="cyan", width=10)
+        t_ev.add_column("Domain", style="blue", width=14)
+        t_ev.add_column("Filename", style="white")
+        t_ev.add_column("Size", justify="right", width=10)
+        t_ev.add_column("SHA-256 Digest", style="dim", width=20)
+        t_ev.add_column("Integrity", style="bold", width=16)
+
+        for it in master_report.evidence_items:
+            sha = it.manifest.pre_analysis_hashes.get("sha256", "N/A")
+            sha_short = f"{sha[:8]}...{sha[-8:]}" if len(sha) > 16 else sha
+            integ = (
+                "[green]VERIFIED (0-MUT)[/green]"
+                if it.manifest.integrity_verified
+                else "[red]TAMPERED[/red]"
+            )
+            t_ev.add_row(
+                it.item_id,
+                it.item_type.value,
+                it.source_name,
+                f"{it.size_bytes:,} B",
+                sha_short,
+                integ,
+            )
+        console.print(t_ev)
+        console.print()
+
+        # 2. Cross-Evidence Correlations
+        if master_report.cross_module_correlations:
+            t_corr = Table(title="Cross-Evidence Threat Correlations", expand=True)
+            t_corr.add_column("Severity", width=10)
+            t_corr.add_column("Correlation Title", style="bold white")
+            t_corr.add_column("Involved Items", style="cyan", width=18)
+            t_corr.add_column("Narrative Description", style="dim")
+
+            for c in master_report.cross_module_correlations:
+                sev_color = "red" if c.severity in ["CRITICAL", "HIGH"] else "yellow"
+                t_corr.add_row(
+                    f"[{sev_color}]{c.severity}[/{sev_color}]",
+                    c.title,
+                    ", ".join(c.involved_item_ids),
+                    c.description,
+                )
+            console.print(t_corr)
+            console.print()
+
+        # 3. Master Chronological Timeline
+        if master_report.master_timeline:
+            t_time = Table(title="Master Chronological Timeline (UTC)", expand=True)
+            t_time.add_column("Timestamp (UTC)", style="cyan", width=20)
+            t_time.add_column("Domain", style="blue", width=14)
+            t_time.add_column("Category", style="magenta", width=18)
+            t_time.add_column("Title & Details", style="white")
+
+            for ev in master_report.master_timeline[:15]:
+                t_time.add_row(
+                    ev.timestamp_utc.strftime("%Y-%m-%d %H:%M:%S"),
+                    ev.source_type.value,
+                    ev.event_category,
+                    f"[bold]{ev.title}[/bold]: {ev.description}",
+                )
+            console.print(t_time)
+            console.print()
+
+        # 4. Master IoC Summary
+        console.print(
+            f"[bold cyan]Master IoC Ledger:[/bold cyan] [bold white]{len(master_report.master_ioc_ledger)} unique IoCs extracted across all evidence items.[/bold white]"
+        )
+        console.print(
+            "[dim]Use `eft case analyze <FILES...> -f csv -o iocs.csv` to export full RFC 4180 IoC ledger.[/dim]\n"
+        )
+
+    except (typer.Exit, typer.Abort):
+        raise
+    except Exception as e:
+        err_console.print(f"[bold red]Master Case analysis error:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@case_app.command("report")
+def case_report_command(
+    files: List[Path] = typer.Argument(
+        ...,
+        help="Paths to evidence files to aggregate",
+        exists=True,
+    ),
+    case_id: str = typer.Option("CASE-2026-DFIR", "--case-id", "-c", help="Case Reference ID"),
+    examiner: str = typer.Option(
+        "Forensic Examiner", "--examiner", "-e", help="Lead Forensic Examiner"
+    ),
+    agency: Optional[str] = typer.Option(None, "--agency", "-a", help="Investigating Agency"),
+    title: Optional[str] = typer.Option(None, "--title", "-t", help="Case Title"),
+    output: Path = typer.Option(
+        ..., "--output", "-o", help="Destination file path for generated report"
+    ),
+    format: str = typer.Option("pdf", "--format", "-f", help="Report format: pdf, json, stix, csv"),
+) -> None:
+    """Generate court-admissible Master Case Report (PDF, STIX 2.1, JSON, CSV)."""
+    case_analyze_command(
+        files=files,
+        case_id=case_id,
+        examiner=examiner,
+        agency=agency,
+        title=title,
+        json_output=(format.lower() == "json"),
+        output=output,
+        format=format,
+    )
 
 
 @app.command("serve")
