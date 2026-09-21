@@ -81,6 +81,9 @@ from eft.models.memory_forensics import (
     MemoryDumpFormat,
     MemoryDumpMetadata,
     MemoryExtractionReport,
+    MemoryIoCMatch,
+    MemoryIoCType,
+    MemoryPatternReport,
     StringEncoding,
     StringStatistics,
 )
@@ -258,4 +261,7 @@ __all__ = [
     "MemoryDumpMetadata",
     "StringStatistics",
     "MemoryExtractionReport",
+    "MemoryIoCType",
+    "MemoryIoCMatch",
+    "MemoryPatternReport",
 ]

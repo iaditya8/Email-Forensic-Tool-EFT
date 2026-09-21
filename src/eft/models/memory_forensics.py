@@ -28,6 +28,22 @@ class StringEncoding(str, Enum):
     UTF16_LE = "UTF-16LE"
 
 
+class MemoryIoCType(str, Enum):
+    """Category classification for in-memory IoC and pattern findings."""
+
+    IPV4 = "IPV4"
+    IPV6 = "IPV6"
+    URL = "URL"
+    EMAIL = "EMAIL"
+    CRYPTO_WALLET_BTC = "CRYPTO_WALLET_BTC"
+    CRYPTO_WALLET_ETH = "CRYPTO_WALLET_ETH"
+    JWT_TOKEN = "JWT_TOKEN"
+    PRIVATE_KEY = "PRIVATE_KEY"
+    BASE64_PAYLOAD = "BASE64_PAYLOAD"
+    KNOWN_MALICIOUS_HASH = "KNOWN_MALICIOUS_HASH"
+    HIGH_RISK_CREDENTIAL = "HIGH_RISK_CREDENTIAL"
+
+
 class ExtractedStringItem(BaseModel):
     """Canonical model for a single extracted string artifact."""
 
@@ -106,4 +122,61 @@ class MemoryExtractionReport(BaseModel):
     analysis_timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="UTC timestamp of the memory extraction analysis",
+    )
+
+
+class MemoryIoCMatch(BaseModel):
+    """Canonical model for a detected in-memory IoC or sensitive pattern match."""
+
+    model_config = ConfigDict(frozen=True)
+
+    ioc_type: MemoryIoCType = Field(..., description="Classification category of the IoC finding")
+    value: str = Field(..., description="Matched token, address, URL, or credential pattern")
+    offset: int = Field(..., description="Byte offset in memory image where finding was located")
+    encoding: StringEncoding = Field(
+        default=StringEncoding.ASCII, description="Encoding of source string"
+    )
+    context: str = Field(
+        default="", description="Surrounding context snippet for analyst inspection"
+    )
+    risk_score: int = Field(default=0, description="Heuristic risk score from 0 (benign) to 100")
+    is_known_malicious: bool = Field(
+        default=False, description="Whether value matches known threat intelligence catalogs"
+    )
+    enrichment: dict[str, Any] = Field(
+        default_factory=dict, description="Enrichment metadata (GeoIP, ASN, threat tags)"
+    )
+    mitre_attack: str | None = Field(
+        default=None, description="MITRE ATT&CK technique reference (e.g. T1071, T1552)"
+    )
+
+
+class MemoryPatternReport(BaseModel):
+    """Master report containing findings from in-memory pattern matching and IoC triage."""
+
+    model_config = ConfigDict(frozen=True)
+
+    evidence_path: str = Field(..., description="Path or identifier of the analyzed memory image")
+    evidence_hashes: dict[str, str] = Field(
+        default_factory=dict, description="Cryptographic acquisition hashes (md5, sha256)"
+    )
+    total_patterns_matched: int = Field(
+        default=0, description="Total number of IoCs and pattern instances discovered"
+    )
+    matches_by_type: dict[str, int] = Field(
+        default_factory=dict, description="Distribution of matches grouped by IoC type"
+    )
+    matches: list[MemoryIoCMatch] = Field(
+        default_factory=list, description="Chronological list of all detected IoC findings"
+    )
+    high_risk_findings: list[MemoryIoCMatch] = Field(
+        default_factory=list,
+        description="Filtered subset of high and critical severity findings (risk >= 70)",
+    )
+    threat_level: str = Field(
+        default="LOW", description="Overall risk rating: LOW, MEDIUM, HIGH, CRITICAL"
+    )
+    analysis_timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp of the memory pattern triage",
     )
