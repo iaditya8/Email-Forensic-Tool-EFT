@@ -315,8 +315,8 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Integrate the YARA rule engine directly with the memory triage pipeline to match known threat actor signatures (Cobalt Strike, Meterpreter, Mimikatz, Lumma Stealer) across memory blocks.
   * *Why:* Automates detection of in-memory beacons, reflective DLL injection, and credential dumping utilities.
 * **Done when:**
-  - [ ] Compiles and executes memory-specific YARA rules across memory dump blocks.
-  - [ ] Generates forensic threat attribution findings and integrates with the composite Threat Scorer.
+  - [x] Compiles and executes memory-specific YARA rules across memory dump blocks.
+  - [x] Generates forensic threat attribution findings and integrates with the composite Threat Scorer.
 
 ---
 
