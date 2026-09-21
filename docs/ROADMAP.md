@@ -329,13 +329,13 @@ This document serves as the master source for creating GitHub Issues and trackin
     * `eft file <inspect|entropy|exif>`
     * `eft osint <lookup|domain|ip>`
     * `eft pcap <analyze|dns|creds>`
-    * `eft log <evtx|sysmon|m365>`
-    * `eft mem <scan|strings|yara>`
-    * `eft serve [--port 8000]`
+    * `eft log <evtx|sysmon|m365|google>`
+    * `eft mem <scan|strings|iocs|yara>`
+    * `eft serve [--host 127.0.0.1] [--port 8000]`
   * *Why:* Gives digital investigators a single, cohesive command-line suite for all forensic domains.
 * **Done when:**
-  - [ ] Master CLI routes all subcommands with consistent `--json`, `--report`, and `--output` options.
-  - [ ] Rich terminal UI renders standardized color-coded tables and progress indicators across all modules.
+  - [x] Master CLI routes all subcommands with consistent `--json`, `--report`, and `--output` options.
+  - [x] Rich terminal UI renders standardized color-coded tables and progress indicators across all modules.
 
 ### Task 11.2: Multi-Tool Web Dashboard Workspace Switcher
 * **What needs to be built, and why:**
