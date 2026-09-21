@@ -1069,6 +1069,7 @@ class MetadataExtractor:
 
         score = min(100.0, max(0.0, score))
 
+        severity: RiskSeverity
         if max_severity in (RiskSeverity.CRITICAL, RiskSeverity.MALICIOUS_HIGH):
             severity = max_severity
         elif score >= 75.0:
