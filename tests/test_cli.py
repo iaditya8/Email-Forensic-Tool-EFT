@@ -32,6 +32,8 @@ def test_cli_help() -> None:
     assert "map" in result.stdout
     assert "verify" in result.stdout
     assert "serve" in result.stdout
+    assert "lookup" in result.stdout
+    assert "osint" in result.stdout
 
 
 def test_cli_scan_benign_corporate() -> None:
