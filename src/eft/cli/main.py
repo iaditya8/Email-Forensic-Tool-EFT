@@ -18,6 +18,7 @@ from eft import __version__
 from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
+from eft.analysis.domain_osint import DomainOSINTAnalyzer
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
@@ -27,6 +28,7 @@ from eft.ingestion.attachment_extractor import AttachmentExtractor
 from eft.ingestion.engine import EmailIngester
 from eft.ingestion.header_decomposer import HeaderDecomposer
 from eft.models.canonical import CanonicalEmail
+from eft.models.osint import DomainOSINTReport
 from eft.models.threat import CompositeRiskReport, RiskSeverity
 from eft.reporting.custody import ChainOfCustodyManager
 from eft.reporting.exporter import ForensicReportExporter
@@ -710,6 +712,328 @@ def verify_command(
     except Exception as e:
         err_console.print(f"[bold red]Verification error:[/bold red] {e}")
         raise typer.Exit(code=1)
+
+
+def _format_osint_report(report: DomainOSINTReport) -> None:
+    """Render a DomainOSINTReport using Rich tables and panels."""
+    score = report.reputation_score
+    if score >= 75.0:
+        badge = "[bold white on red] CRITICAL RISK [/bold white on red]"
+        score_color = "red"
+    elif score >= 50.0:
+        badge = "[bold white on bright_red] HIGH RISK [/bold white on bright_red]"
+        score_color = "bright_red"
+    elif score >= 25.0:
+        badge = "[bold black on yellow] SUSPICIOUS / MEDIUM RISK [/bold black on yellow]"
+        score_color = "yellow"
+    elif score >= 10.0:
+        badge = "[bold black on cyan] LOW RISK [/bold black on cyan]"
+        score_color = "cyan"
+    else:
+        badge = "[bold white on green] HEALTHY / LOW RISK [/bold white on green]"
+        score_color = "green"
+
+    console.print()
+    console.rule(f"[bold cyan]OSINT INTELLIGENCE REPORT: {report.input_target}[/bold cyan]")
+    console.print()
+
+    target_type = "Email Address" if report.is_email_address else "Domain Name"
+
+    # Executive Score Dial Panel
+    panel_content = (
+        f"Target: [bold]{report.input_target}[/bold] ({target_type})  |  "
+        f"Domain: [bold cyan]{report.analyzed_domain}[/bold cyan]\n"
+        f"Reputation Score: [bold {score_color}]{report.reputation_score:.1f} / 100.0[/bold {score_color}]  |  "
+        f"Severity: {badge}  |  "
+        f"Category: [bold magenta]{report.category.value}[/bold magenta]\n"
+        f"Summary: {report.summary}"
+    )
+    console.print(Panel(panel_content, title="[bold]Executive Domain & Email Intelligence[/bold]"))
+
+    # Target Profile & Domain Identity Table
+    id_table = Table(
+        title="Domain Identity & Target Profile",
+        show_header=True,
+        header_style="bold blue",
+        expand=True,
+    )
+    id_table.add_column("Attribute", style="cyan", width=25)
+    id_table.add_column("Value / Details", style="white")
+
+    id_table.add_row("Target Input", report.input_target)
+    id_table.add_row("Target Type", target_type)
+    if report.username:
+        id_table.add_row("Username / Mailbox", report.username)
+    id_table.add_row("Fully Qualified Domain (FQDN)", report.analyzed_domain)
+    id_table.add_row("Registered Domain", report.registered_domain)
+    id_table.add_row("Top-Level Domain (TLD)", f".{report.tld}")
+    if report.is_punycode:
+        id_table.add_row(
+            "IDN / Punycode", f"[bold yellow]YES ({report.unicode_domain or 'N/A'})[/bold yellow]"
+        )
+    id_table.add_row("Category Classification", report.category.value)
+    if report.disposable_service:
+        id_table.add_row(
+            "Disposable Provider",
+            f"[bold red]{report.disposable_service} (Temporary Mailbox)[/bold red]",
+        )
+    if report.freemail_provider:
+        id_table.add_row("Freemail Provider", f"[bold cyan]{report.freemail_provider}[/bold cyan]")
+    id_table.add_row("Analysis Timestamp (UTC)", report.analyzed_at.isoformat())
+
+    console.print(id_table)
+
+    # DNS Authentication Posture Table
+    dns = report.dns_posture
+    dns_table = Table(
+        title="DNS Routing & Email Authentication Posture",
+        show_header=True,
+        header_style="bold green",
+        expand=True,
+    )
+    dns_table.add_column("Security Mechanism", style="cyan", width=25)
+    dns_table.add_column("Status / Configuration", style="white")
+
+    # MX
+    if dns.has_mx and dns.mx_records:
+        mx_formatted = [f"{m.host} (prio {m.preference})" for m in dns.mx_records]
+        mx_str = f"[bold green]CONFIGURED[/bold green] ({len(dns.mx_records)} records: {', '.join(mx_formatted)})"
+    else:
+        mx_str = "[bold red]MISSING[/bold red] (Cannot receive inbound email)"
+    dns_table.add_row("MX Mail Exchangers", mx_str)
+
+    # A / NS
+    dns_table.add_row(
+        "Host IPv4 (A)", ", ".join(dns.a_records) if dns.a_records else "[dim]None resolved[/dim]"
+    )
+    dns_table.add_row(
+        "Nameservers (NS)",
+        ", ".join(dns.ns_records) if dns.ns_records else "[dim]None resolved[/dim]",
+    )
+
+    # SPF
+    spf = dns.spf
+    if spf.raw_record or spf.qualifier != "missing":
+        spf_status = f"[bold green]PRESENT[/bold green] (Strictness: [bold]{spf.strictness.value}[/bold], Qualifier: [yellow]{spf.qualifier}[/yellow])"
+        if spf.raw_record:
+            spf_status += f"\n[dim]{spf.raw_record}[/dim]"
+        if spf.warnings:
+            spf_status += f"\n[bold yellow]Warnings:[/bold yellow] {'; '.join(spf.warnings)}"
+    else:
+        spf_status = "[bold red]MISSING[/bold red] (No SPF record published)"
+    dns_table.add_row("SPF Record", spf_status)
+
+    # DMARC
+    dmarc = dns.dmarc
+    if dmarc.raw_record or dmarc.policy != "missing":
+        dmarc_color = (
+            "green"
+            if dmarc.enforcement.value in ["REJECT", "QUARANTINE"]
+            else ("yellow" if dmarc.enforcement.value == "NONE" else "red")
+        )
+        dmarc_status = f"[bold {dmarc_color}]PRESENT[/bold {dmarc_color}] (Policy: [bold]{dmarc.policy}[/bold], Enforcement: [bold]{dmarc.enforcement.value}[/bold], pct: {dmarc.percentage}%)"
+        if dmarc.raw_record:
+            dmarc_status += f"\n[dim]{dmarc.raw_record}[/dim]"
+        if dmarc.rua_uris:
+            dmarc_status += f"\n[dim]Reporting (RUA): {', '.join(dmarc.rua_uris)}[/dim]"
+        if dmarc.warnings:
+            dmarc_status += f"\n[bold yellow]Warnings:[/bold yellow] {'; '.join(dmarc.warnings)}"
+    else:
+        dmarc_status = "[bold red]MISSING[/bold red] (No DMARC policy published)"
+    dns_table.add_row("DMARC Policy", dmarc_status)
+
+    # DKIM Discovery
+    dkim_probed = dns.discovered_dkim
+    found_selectors = [d for d in dkim_probed if d.is_valid]
+    if found_selectors:
+        sel_details = [
+            f"[bold green]{d.selector}[/bold green] ({d.key_type})" for d in found_selectors
+        ]
+        dkim_status = f"[bold green]{len(found_selectors)} Selectors Discovered[/bold green]: {', '.join(sel_details)}"
+    else:
+        dkim_status = "[dim]0 common selectors discovered[/dim]"
+    dns_table.add_row("DKIM Probing", dkim_status)
+
+    # BIMI
+    bimi = dns.bimi
+    if bimi.logo_url or bimi.raw_record:
+        bimi_status = f"[bold green]PRESENT[/bold green] (Logo: {bimi.logo_url or 'N/A'}, VMC: {'YES' if bimi.has_vmc else 'NO'})"
+    else:
+        bimi_status = "[dim]Not configured[/dim]"
+    dns_table.add_row("BIMI Brand Identity", bimi_status)
+
+    console.print(dns_table)
+
+    # Brand Lookalike & Typosquatting Panel
+    if report.brand_risk and (
+        report.brand_risk.has_homoglyphs
+        or report.brand_risk.is_cousin_domain
+        or report.brand_risk.similarity_score >= 0.75
+    ):
+        br = report.brand_risk
+        hg_str = f" | Homoglyphs: {', '.join(br.homoglyphs_detected)}" if br.has_homoglyphs else ""
+        brand_text = (
+            f"Target Domain: [bold cyan]{report.analyzed_domain}[/bold cyan]  -->  "
+            f"Targeted Protected Brand: [bold yellow]{br.matched_brand_domain}[/bold yellow]\n"
+            f"Levenshtein Distance: [bold]{br.levenshtein_distance}[/bold]  |  "
+            f"Similarity: [bold]{br.similarity_score * 100:.1f}%[/bold]  |  "
+            f"Indicator: [bold red]{br.risk_indicator}[/bold red]{hg_str}"
+        )
+        console.print(
+            Panel(
+                brand_text,
+                title="[bold red][!] Brand Impersonation & Typosquatting Alert[/bold red]",
+                border_style="red",
+            )
+        )
+
+    # Threat Factors Table
+    if report.risk_factors:
+        rf_table = Table(
+            title="Contributing Threat & Anomaly Factors",
+            show_header=True,
+            header_style="bold red",
+            expand=True,
+        )
+        rf_table.add_column("Severity", width=12)
+        rf_table.add_column("Threat Factor / Anomaly", style="bold")
+        rf_table.add_column("Points", justify="right", width=10)
+        rf_table.add_column("Evidence Reference", style="dim")
+        for f in report.risk_factors:
+            sev_str = f.severity.value if hasattr(f.severity, "value") else f.severity
+            rf_table.add_row(
+                sev_str,
+                f.name,
+                f"+{f.score_contribution:.1f}",
+                f.evidence_reference or "",
+            )
+        console.print(rf_table)
+
+    # Remediation Advice Panel
+    if report.remediation_advice:
+        advice_text = "\n".join(
+            f"[bold cyan]*[/bold cyan] {advice}" for advice in report.remediation_advice
+        )
+        console.print(
+            Panel(
+                advice_text,
+                title="[bold]Forensic Remediation & Hardening Recommendations[/bold]",
+                border_style="cyan",
+            )
+        )
+
+    console.print()
+
+
+def _handle_lookup(
+    target: str,
+    json_output: bool = False,
+    dns_timeout: float = 3.0,
+    offline: bool = False,
+    output: Optional[Path] = None,
+) -> None:
+    try:
+        analyzer = DomainOSINTAnalyzer()
+        report = analyzer.analyze(target=target, dns_timeout=dns_timeout, offline=offline)
+
+        if output:
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(report.model_dump_json(indent=2), encoding="utf-8")
+            if not json_output:
+                console.print(
+                    f"[bold green][OK][/bold green] OSINT report saved to: [cyan]{output}[/cyan]"
+                )
+
+        if json_output:
+            typer.echo(report.model_dump_json(indent=2))
+        else:
+            _format_osint_report(report)
+
+    except (typer.Exit, typer.Abort):
+        raise
+    except Exception as e:
+        err_console.print(f"[bold red]OSINT Lookup Error:[/bold red] {e}")
+        raise typer.Exit(code=1)
+
+
+@app.command("lookup")
+def lookup_command(
+    target: str = typer.Argument(
+        ...,
+        help="Email address (user@domain.com), domain name (example.com), or URL to inspect",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output raw structured JSON intelligence report",
+    ),
+    dns_timeout: float = typer.Option(
+        3.0,
+        "--dns-timeout",
+        "-t",
+        help="Timeout in seconds for DNS queries",
+    ),
+    offline: bool = typer.Option(
+        False,
+        "--offline",
+        help="Run in offline air-gapped mode without performing network DNS queries",
+    ),
+    output: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Optional destination file path to save JSON report",
+    ),
+) -> None:
+    """Perform pre-triage OSINT intelligence inspection on an email address or domain name."""
+    _handle_lookup(
+        target=target,
+        json_output=json_output,
+        dns_timeout=dns_timeout,
+        offline=offline,
+        output=output,
+    )
+
+
+@app.command("osint")
+def osint_command(
+    target: str = typer.Argument(
+        ...,
+        help="Email address (user@domain.com), domain name (example.com), or URL to inspect",
+    ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        "-j",
+        help="Output raw structured JSON intelligence report",
+    ),
+    dns_timeout: float = typer.Option(
+        3.0,
+        "--dns-timeout",
+        "-t",
+        help="Timeout in seconds for DNS queries",
+    ),
+    offline: bool = typer.Option(
+        False,
+        "--offline",
+        help="Run in offline air-gapped mode without performing network DNS queries",
+    ),
+    output: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Optional destination file path to save JSON report",
+    ),
+) -> None:
+    """Alias for 'lookup': Inspect domain/email authentication posture, homoglyphs, and reputation."""
+    _handle_lookup(
+        target=target,
+        json_output=json_output,
+        dns_timeout=dns_timeout,
+        offline=offline,
+        output=output,
+    )
 
 
 @app.command("serve")
