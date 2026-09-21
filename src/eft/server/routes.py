@@ -37,7 +37,10 @@ from eft.ingestion.attachment_extractor import AttachmentExtractor
 from eft.ingestion.engine import EmailIngester
 from eft.ingestion.header_decomposer import HeaderDecomposer
 from eft.models.canonical import CanonicalEmail
+from eft.models.master_case import MasterCaseReport
 from eft.models.osint import DomainOSINTReport
+from eft.reporting.case_aggregator import MasterCaseAggregator
+from eft.reporting.case_exporter import MasterCaseExporter
 from eft.reporting.custody import ChainOfCustodyManager
 from eft.reporting.exporter import ForensicReportExporter
 from eft.reporting.timeline import TimelineGenerator
@@ -573,3 +576,99 @@ async def analyze_memory_endpoint(
     finally:
         if tmp_path.is_file():
             tmp_path.unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# 6. MASTER CASE AGGREGATION & CROSS-CORRELATION API
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/case/analyze")
+async def analyze_master_case_endpoint(
+    files: List[UploadFile] = File(...),
+    case_id: str = Form("CASE-2026-DFIR"),
+    examiner: str = Form("Forensic Examiner"),
+    agency: Optional[str] = Form(None),
+    title: Optional[str] = Form(None),
+) -> Dict[str, Any]:
+    """Ingest multiple multi-modal evidence files, run cross-module correlation, and build Master Case Report."""
+    if not files:
+        raise HTTPException(status_code=400, detail="At least one evidence file is required.")
+
+    aggregator = MasterCaseAggregator(
+        case_id=case_id,
+        examiner_name=examiner,
+        examiner_agency=agency,
+        case_title=title,
+    )
+
+    temp_paths: List[Path] = []
+    try:
+        for uf in files:
+            suffix = Path(uf.filename or "evidence.bin").suffix
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+                content = await uf.read()
+                tmp.write(content)
+                tmp_p = Path(tmp.name)
+                temp_paths.append(tmp_p)
+
+            aggregator.add_evidence_file(
+                file_path=tmp_p,
+                custom_label=uf.filename,
+            )
+
+        master_report = aggregator.correlate_and_build_report()
+        return {
+            "success": True,
+            "case_id": case_id,
+            "report": master_report.model_dump(mode="json"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Master Case correlation failed: {str(e)}")
+    finally:
+        for p in temp_paths:
+            if p.is_file():
+                p.unlink(missing_ok=True)
+
+
+@router.post("/api/case/export/{format_type}")
+async def export_master_case_endpoint(
+    format_type: str,
+    payload: Dict[str, Any],
+) -> Response:
+    """Export Master Case Report to court-admissible PDF, STIX 2.1, JSON, or CSV format."""
+    raw_case_data = payload.get("report") or payload
+    try:
+        case_report = MasterCaseReport.model_validate(raw_case_data)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid MasterCaseReport data: {str(e)}")
+
+    fmt = format_type.lower().strip()
+    if fmt == "json":
+        json_str = MasterCaseExporter.export_json(case_report)
+        return Response(content=json_str, media_type="application/json")
+
+    elif fmt == "csv":
+        csv_str = MasterCaseExporter.export_csv(case_report)
+        return Response(content=csv_str, media_type="text/csv")
+
+    elif fmt == "stix":
+        stix_str = MasterCaseExporter.export_stix(case_report)
+        return Response(content=stix_str, media_type="application/json")
+
+    elif fmt == "pdf":
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
+            tmp_p = Path(tmp_pdf.name)
+
+        try:
+            MasterCaseExporter.export_pdf(case_report, output_path=tmp_p)
+            pdf_bytes = tmp_p.read_bytes()
+            return Response(content=pdf_bytes, media_type="application/pdf")
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid format '{format_type}'. Supported formats: pdf, json, csv, stix",
+        )

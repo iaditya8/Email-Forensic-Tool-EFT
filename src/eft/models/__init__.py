@@ -76,6 +76,14 @@ from eft.models.logon_persistence import (
     ServiceInstalledEvent,
     WindowsLogonType,
 )
+from eft.models.master_case import (
+    CaseEvidenceItem,
+    CrossEvidenceCorrelation,
+    EvidenceItemType,
+    MasterCaseIoC,
+    MasterCaseReport,
+    MasterTimelineEvent,
+)
 from eft.models.memory_forensics import (
     ExtractedStringItem,
     MemoryDumpFormat,
@@ -270,4 +278,10 @@ __all__ = [
     "MemoryThreatFamily",
     "MemoryYARAMatch",
     "MemoryThreatAttributionReport",
+    "EvidenceItemType",
+    "MasterCaseIoC",
+    "MasterTimelineEvent",
+    "CaseEvidenceItem",
+    "CrossEvidenceCorrelation",
+    "MasterCaseReport",
 ]
