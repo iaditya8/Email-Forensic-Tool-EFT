@@ -1487,10 +1487,13 @@
       const staticRep = data.static_report || {};
       const artRep = data.artifact_report || {};
       const metaRep = data.metadata_report || {};
+      const ident = artRep.identification || {};
 
-      document.getElementById('file-res-mime').innerText = `${artRep.mime_type || staticRep.file_type || 'Unknown'} (${artRep.file_magic || 'Binary'})`;
+      const mimeStr = ident.mime_type || artRep.mime_type || staticRep.format_category || 'Unknown';
+      const magicStr = ident.file_magic || artRep.file_magic || staticRep.format_category || 'Binary';
+      document.getElementById('file-res-mime').innerText = `${mimeStr} (${magicStr})`;
       
-      const entropy = staticRep.entropy !== undefined ? staticRep.entropy : (artRep.entropy || 0);
+      const entropy = staticRep.overall_entropy !== undefined ? staticRep.overall_entropy : (staticRep.entropy !== undefined ? staticRep.entropy : (artRep.entropy || 0));
       let entropyColor = entropy > 7.2 ? 'var(--risk-critical)' : (entropy > 6.5 ? 'var(--risk-medium)' : 'var(--accent-emerald)');
       document.getElementById('file-res-entropy').innerHTML = `<span style="color:${entropyColor}; font-weight:700;">${entropy.toFixed(3)} / 8.0</span> ${entropy > 7.2 ? '(Packed/Encrypted)' : '(Normal)'}`;
       
@@ -1502,27 +1505,10 @@
         hashesTbody.innerHTML = Object.entries(data.hashes).map(([k, v]) => `<tr><td><strong>${k.toUpperCase()}</strong></td><td><code>${escapeHtml(v)}</code></td></tr>`).join('');
       }
 
-      // Static content
+      // Static executable content
       const staticDiv = document.getElementById('file-static-content');
       if (staticDiv) {
-        let html = `
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
-            <div class="stat-box"><div class="title">Architecture / Format</div><div class="value">${escapeHtml(staticRep.architecture || staticRep.file_type || 'N/A')}</div></div>
-            <div class="stat-box"><div class="title">Sections Count</div><div class="value">${staticRep.sections ? staticRep.sections.length : 0}</div></div>
-            <div class="stat-box"><div class="title">Imported Libraries</div><div class="value">${staticRep.imported_dlls ? staticRep.imported_dlls.length : (staticRep.imports ? staticRep.imports.length : 0)}</div></div>
-          </div>
-        `;
-        if (staticRep.sections && staticRep.sections.length > 0) {
-          html += `
-            <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Binary Sections & Entropy</h4>
-            <div class="table-container"><table><thead><tr><th>Section</th><th>Virtual Size</th><th>Raw Size</th><th>Entropy</th><th>Suspicious</th></tr></thead><tbody>
-          `;
-          staticRep.sections.forEach(s => {
-            html += `<tr><td><code>${escapeHtml(s.name || s.section_name)}</code></td><td>${s.virtual_size || '-'}</td><td>${s.raw_size || '-'}</td><td>${s.entropy ? s.entropy.toFixed(2) : '-'}</td><td>${s.is_suspicious ? '<span class="auth-badge auth-fail">YES</span>' : '<span style="color:var(--text-muted)">No</span>'}</td></tr>`;
-          });
-          html += `</tbody></table></div>`;
-        }
-        staticDiv.innerHTML = html;
+        staticDiv.innerHTML = renderFileStaticContent(staticRep, artRep);
       }
 
       // Metadata content
@@ -1533,6 +1519,252 @@
 
       // Raw json
       document.getElementById('file-raw-json').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function renderFileStaticContent(staticRep, artRep) {
+      if (!staticRep && !artRep) {
+        return `<p style="color:var(--text-muted); text-align:center; padding: 1.5rem;">No static analysis results available.</p>`;
+      }
+
+      const pe = staticRep ? staticRep.pe_analysis : null;
+      const elf = staticRep ? staticRep.elf_analysis : null;
+      const ole = staticRep ? staticRep.ole_analysis : null;
+      const ident = artRep ? (artRep.identification || {}) : {};
+
+      let html = "";
+
+      // 1. Master Forensic Alerts (PE / ELF / OLE / File Identifier anomalies)
+      const alerts = [
+        ...(pe && pe.forensic_alerts ? pe.forensic_alerts : []),
+        ...(elf && elf.forensic_alerts ? elf.forensic_alerts : []),
+        ...(ole && ole.forensic_alerts ? ole.forensic_alerts : []),
+        ...(ident && ident.forensic_alerts ? ident.forensic_alerts : [])
+      ];
+
+      if (alerts.length > 0) {
+        html += `<h4 style="font-size: 0.85rem; color: var(--risk-critical); margin-bottom: 0.5rem;">🚨 Binary Structure & Security Anomalies</h4>`;
+        html += `<div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">`;
+        alerts.forEach(alt => {
+          html += `<div class="alert-box" style="border-left: 3px solid var(--risk-critical);"><strong>[!] ALERT:</strong> ${escapeHtml(alt)}</div>`;
+        });
+        html += `</div>`;
+      }
+
+      // 2. Windows PE Executable Analysis
+      if (pe && pe.is_valid_pe) {
+        const compiledDate = pe.compilation_timestamp ? pe.compilation_timestamp.replace('T', ' ').substring(0, 19) + ' UTC' : 'Unknown';
+        html += `
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">⚙️ Windows Portable Executable (PE32/PE32+) Header</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="stat-box"><div class="title">Architecture & Subsystem</div><div class="value">${escapeHtml(pe.architecture || 'PE32')}<br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(pe.subsystem || 'Unknown')}</span></div></div>
+            <div class="stat-box"><div class="title">Entry Point & Image Base</div><div class="value"><code>0x${(pe.entry_point_rva || 0).toString(16).toUpperCase()}</code><br><span style="font-size:0.75rem; color:var(--text-muted);">Base: <code>0x${(pe.image_base || 0).toString(16).toUpperCase()}</code></span></div></div>
+            <div class="stat-box"><div class="title">Compile Timestamp</div><div class="value">${escapeHtml(compiledDate)} ${pe.is_timestamp_suspicious ? '<span class="auth-badge auth-fail">Suspicious</span>' : ''}</div></div>
+            <div class="stat-box"><div class="title">Packing Attribution</div><div class="value">${pe.is_packed ? '<span class="auth-badge auth-fail">PACKED</span> ' + escapeHtml((pe.detected_packers || []).join(', ') || 'Custom Crypter') : '<span style="color:var(--accent-emerald);">Not Packed</span>'}</div></div>
+          </div>
+
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">🛡️ Binary Security Mitigations (DllCharacteristics)</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div class="stat-box"><div class="title">ASLR (Relocation)</div><div class="value">${pe.has_aslr ? '<span class="auth-badge auth-pass">ENABLED</span>' : '<span class="auth-badge auth-fail">DISABLED</span>'}</div></div>
+            <div class="stat-box"><div class="title">DEP / NX Stack</div><div class="value">${pe.has_dep_nx ? '<span class="auth-badge auth-pass">ENABLED</span>' : '<span class="auth-badge auth-fail">DISABLED</span>'}</div></div>
+            <div class="stat-box"><div class="title">Control Flow Guard (CFG)</div><div class="value">${pe.has_cfg ? '<span class="auth-badge auth-pass">ENABLED</span>' : '<span style="color:var(--text-muted)">Disabled</span>'}</div></div>
+            <div class="stat-box"><div class="title">Structured Exception (SEH)</div><div class="value">${pe.has_seh ? '<span class="auth-badge auth-pass">ENABLED</span>' : '<span class="auth-badge auth-fail">DISABLED</span>'}</div></div>
+            <div class="stat-box"><div class="title">Digital Signature</div><div class="value">${pe.has_digital_signature ? '<span class="auth-badge auth-pass">SIGNED (' + pe.signature_size + ' B)</span>' : '<span style="color:var(--text-muted)">Unsigned</span>'}</div></div>
+            <div class="stat-box"><div class="title">.NET Managed Assembly</div><div class="value">${pe.is_dotnet ? '<span class="auth-badge auth-pass">YES (.NET)</span>' : '<span style="color:var(--text-muted)">Native C/C++</span>'}</div></div>
+          </div>
+        `;
+
+        // PE Sections Table
+        if (pe.sections && pe.sections.length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📑 PE Binary Sections (${pe.sections.length} Sections)</h4>
+            <div class="table-container" style="margin-bottom: 1.25rem;"><table><thead><tr><th>Section</th><th>Virtual Address</th><th>Virtual Size</th><th>Raw Size</th><th>Entropy</th><th>Permissions</th><th>Anomaly</th></tr></thead><tbody>
+          `;
+          pe.sections.forEach(s => {
+            const entColor = s.entropy > 7.2 ? 'var(--risk-critical)' : (s.entropy > 6.5 ? 'var(--risk-medium)' : 'var(--text-primary)');
+            const perms = [s.is_readable ? 'R' : '-', s.is_writable ? 'W' : '-', s.is_executable ? 'X' : '-'].join('');
+            html += `
+              <tr style="${s.is_wx ? 'background: rgba(239, 68, 68, 0.1);' : ''}">
+                <td><code>${escapeHtml(s.name)}</code></td>
+                <td><code>0x${(s.virtual_address || 0).toString(16).toUpperCase()}</code></td>
+                <td>${(s.virtual_size || 0).toLocaleString()} B</td>
+                <td>${(s.raw_data_size || 0).toLocaleString()} B</td>
+                <td><strong style="color: ${entColor}">${(s.entropy || 0).toFixed(2)}</strong></td>
+                <td><code>${perms}</code></td>
+                <td>${s.is_wx ? '<span class="auth-badge auth-fail">W+X EXEC</span>' : (s.is_suspicious ? '<span class="auth-badge auth-fail">SUSPICIOUS</span>' : '<span style="color:var(--text-muted)">Clean</span>')}</td>
+              </tr>
+            `;
+          });
+          html += `</tbody></table></div>`;
+        }
+
+        // Suspicious MITRE APIs
+        if (pe.suspicious_apis && pe.suspicious_apis.length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--risk-critical); margin-bottom: 0.5rem;">🎯 Suspicious DFIR & MITRE ATT&CK APIs (${pe.suspicious_apis.length} Flagged)</h4>
+            <div class="table-container" style="margin-bottom: 1.25rem;"><table><thead><tr><th>Function Name</th><th>DLL Library</th><th>Threat Category</th><th>Severity</th><th>Forensic Context</th></tr></thead><tbody>
+          `;
+          pe.suspicious_apis.forEach(api => {
+            html += `
+              <tr>
+                <td><strong style="color:var(--risk-critical); font-family:monospace;">${escapeHtml(api.function_name)}</strong></td>
+                <td><code>${escapeHtml(api.dll_name)}</code></td>
+                <td><span class="auth-badge auth-fail">${escapeHtml(api.suspicious_category || 'Execution')}</span></td>
+                <td><span class="auth-badge ${api.threat_severity === 'CRITICAL' ? 'auth-fail' : 'auth-warn'}">${escapeHtml(api.threat_severity || 'HIGH')}</span></td>
+                <td>${escapeHtml(api.description || '')}</td>
+              </tr>
+            `;
+          });
+          html += `</tbody></table></div>`;
+        }
+
+        // Imported DLLs
+        if (pe.imports && pe.imports.length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📦 Imported DLLs & Dynamic Symbols (${pe.imports.length} Libraries)</h4>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+          `;
+          pe.imports.forEach(imp => {
+            const funcList = (imp.functions || []).map(f => f.function_name).filter(Boolean);
+            html += `
+              <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                  <strong style="color: var(--accent-cyan); font-family: monospace;">${escapeHtml(imp.dll_name)}</strong>
+                  <span class="auth-badge ${imp.suspicious_function_count > 0 ? 'auth-fail' : 'auth-pass'}">${funcList.length} Symbols (${imp.suspicious_function_count || 0} Suspicious)</span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); max-height: 120px; overflow-y: auto; font-family: monospace; line-height: 1.4;">
+                  ${escapeHtml(funcList.join(', ') || 'No ordinal names parsed')}
+                </div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+
+        return html;
+      }
+
+      // 3. Linux / Unix ELF Executable Analysis
+      if (elf && elf.is_valid_elf) {
+        html += `
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">🐧 Linux Executable & Linkable Format (ELF) Header</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="stat-box"><div class="title">Architecture & Machine</div><div class="value">${escapeHtml(elf.architecture)}<br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(elf.ei_class)} | ${escapeHtml(elf.endianness)}</span></div></div>
+            <div class="stat-box"><div class="title">ELF Type & OS ABI</div><div class="value">${escapeHtml(elf.file_type)}<br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(elf.os_abi)}</span></div></div>
+            <div class="stat-box"><div class="title">Entry Point Address</div><div class="value"><code>0x${(elf.entry_point || 0).toString(16).toUpperCase()}</code><br><span style="font-size:0.75rem; color:var(--text-muted);">${elf.program_header_count || 0} Program Headers</span></div></div>
+            <div class="stat-box"><div class="title">Dynamic Interpreter</div><div class="value"><code>${escapeHtml(elf.interpreter || 'Static (No PT_INTERP)')}</code></div></div>
+          </div>
+
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">🛡️ Linux Binary Protections & Pack Status</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div class="stat-box"><div class="title">NX Stack Protection</div><div class="value">${elf.has_nx_stack ? '<span class="auth-badge auth-pass">ENABLED (NX)</span>' : '<span class="auth-badge auth-fail">DISABLED (Exec Stack)</span>'}</div></div>
+            <div class="stat-box"><div class="title">Packer Attribution</div><div class="value">${elf.is_packed ? '<span class="auth-badge auth-fail">PACKED</span> ' + escapeHtml((elf.detected_packers || []).join(', ') || 'UPX') : '<span style="color:var(--accent-emerald);">Not Packed</span>'}</div></div>
+            <div class="stat-box"><div class="title">Shared Libraries</div><div class="value">${elf.imported_libraries ? elf.imported_libraries.length : 0} Needed</div></div>
+            <div class="stat-box"><div class="title">Suspicious Symbols</div><div class="value">${elf.suspicious_symbols ? elf.suspicious_symbols.length : 0} Flagged</div></div>
+          </div>
+        `;
+
+        // ELF Sections Table
+        if (elf.sections && elf.sections.length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📑 ELF Binary Sections (${elf.sections.length} Sections)</h4>
+            <div class="table-container" style="margin-bottom: 1.25rem;"><table><thead><tr><th>Section Name</th><th>Type</th><th>Virtual Addr</th><th>Size</th><th>Entropy</th><th>Permissions</th><th>Anomaly</th></tr></thead><tbody>
+          `;
+          elf.sections.forEach(s => {
+            const entColor = s.entropy > 7.2 ? 'var(--risk-critical)' : (s.entropy > 6.5 ? 'var(--risk-medium)' : 'var(--text-primary)');
+            const perms = [s.is_readable ? 'R' : '-', s.is_writable ? 'W' : '-', s.is_executable ? 'X' : '-'].join('');
+            html += `
+              <tr style="${s.is_wx ? 'background: rgba(239, 68, 68, 0.1);' : ''}">
+                <td><code>${escapeHtml(s.name)}</code></td>
+                <td><span class="auth-badge auth-none">${escapeHtml(s.section_type)}</span></td>
+                <td><code>0x${(s.virtual_address || 0).toString(16).toUpperCase()}</code></td>
+                <td>${(s.raw_data_size || 0).toLocaleString()} B</td>
+                <td><strong style="color: ${entColor}">${(s.entropy || 0).toFixed(2)}</strong></td>
+                <td><code>${perms}</code></td>
+                <td>${s.is_wx ? '<span class="auth-badge auth-fail">W+X EXEC</span>' : '<span style="color:var(--text-muted)">Clean</span>'}</td>
+              </tr>
+            `;
+          });
+          html += `</tbody></table></div>`;
+        }
+
+        // Suspicious Linux Symbols
+        if (elf.suspicious_symbols && elf.suspicious_symbols.length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--risk-critical); margin-bottom: 0.5rem;">🎯 Suspicious Linux System Calls & APIs</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem;">
+          `;
+          elf.suspicious_symbols.forEach(sym => {
+            html += `<span class="auth-badge auth-fail" style="font-family: monospace; font-size: 0.8rem; padding: 0.35rem 0.6rem;">${escapeHtml(sym)}</span>`;
+          });
+          html += `</div>`;
+        }
+
+        // Shared Libraries (DT_NEEDED)
+        if (elf.imported_libraries && elf.imported_libraries.length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📦 Shared Library Dependencies (DT_NEEDED)</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem;">
+          `;
+          elf.imported_libraries.forEach(lib => {
+            html += `<span class="auth-badge auth-pass" style="font-family: monospace; font-size: 0.8rem; padding: 0.35rem 0.6rem;">${escapeHtml(lib)}</span>`;
+          });
+          html += `</div>`;
+        }
+
+        return html;
+      }
+
+      // 4. Microsoft OLE Compound Document Analysis
+      if (ole && ole.is_ole_compound_document) {
+        html += `
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📋 Microsoft OLE Compound Document Structure</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+            <div class="stat-box"><div class="title">VBA Macros Present</div><div class="value">${ole.has_vba_macros ? '<span class="auth-badge auth-fail">YES (' + ole.total_macro_lines + ' lines)</span>' : '<span style="color:var(--accent-emerald);">None</span>'}</div></div>
+            <div class="stat-box"><div class="title">VBA Stream Count</div><div class="value">${ole.vba_streams ? ole.vba_streams.length : 0} Modules</div></div>
+            <div class="stat-box"><div class="title">Auto-Exec Triggers</div><div class="value">${ole.all_auto_exec_triggers && ole.all_auto_exec_triggers.length > 0 ? '<span class="auth-badge auth-fail">' + escapeHtml(ole.all_auto_exec_triggers.join(', ')) + '</span>' : 'None'}</div></div>
+            <div class="stat-box"><div class="title">Macro Obfuscation</div><div class="value">${ole.has_obfuscation ? '<span class="auth-badge auth-fail">DETECTED</span>' : 'No'}</div></div>
+          </div>
+        `;
+
+        if (ole.vba_streams && ole.vba_streams.length > 0) {
+          html += `<h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📜 Decompressed VBA Macro Modules</h4>`;
+          ole.vba_streams.forEach(v => {
+            html += `
+              <div style="background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                  <strong style="color: var(--accent-cyan); font-family: monospace;">Module: ${escapeHtml(v.stream_name)}</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">${(v.code_size_bytes || 0).toLocaleString()} bytes</span>
+                </div>
+                <pre class="raw-viewer" style="max-height: 250px; overflow-y: auto;">${escapeHtml(v.source_code || '')}</pre>
+              </div>
+            `;
+          });
+        }
+
+        return html;
+      }
+
+      // 5. Generic Non-PE / Non-ELF / Non-OLE Binary Payload
+      const cat = ident.category || (artRep && artRep.category) || 'Binary Payload';
+      const ftype = ident.file_type || (artRep && artRep.file_type) || staticRep.format_category || 'Binary Artifact';
+      const fmagic = ident.file_magic || (artRep && artRep.file_magic) || 'Raw Binary';
+
+      html += `
+        <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.25rem;">
+          <h4 style="font-size: 0.95rem; color: var(--accent-cyan); margin-bottom: 0.75rem;">📦 Static Artifact Classification</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="stat-box"><div class="title">Format Category</div><div class="value">${escapeHtml(cat)}</div></div>
+            <div class="stat-box"><div class="title">Identified Type</div><div class="value">${escapeHtml(ftype)}</div></div>
+            <div class="stat-box"><div class="title">Magic Header</div><div class="value">${escapeHtml(fmagic)}</div></div>
+            <div class="stat-box"><div class="title">Threat Score</div><div class="value">${(staticRep.threat_score || (artRep ? artRep.threat_score : 0) || 0).toFixed(0)} / 100 (${escapeHtml(staticRep.verdict || (artRep ? artRep.verdict : 'BENIGN'))})</div></div>
+          </div>
+          <p style="color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin: 0;">
+            ${escapeHtml(staticRep.summary || (artRep ? artRep.summary : '') || 'This file is not a Windows PE executable or Linux ELF binary. Shannon entropy, magic byte signatures, and multi-algorithm cryptographic hashes have been cataloged.')}
+          </p>
+        </div>
+      `;
+
+      return html;
     }
 
     function renderFileMetadataContent(metaRep, staticRep, artRep) {

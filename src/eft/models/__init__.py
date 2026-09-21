@@ -134,6 +134,8 @@ from eft.models.pcap import (
 )
 from eft.models.pe_ole import (
     BinaryStaticReport,
+    ELFAnalysisReport,
+    ELFSectionAnalysis,
     EntropyLevel,
     OLEAnalysisReport,
     PEAnalysisReport,
@@ -212,6 +214,8 @@ __all__ = [
     "VBAMacroStream",
     "OLEAnalysisReport",
     "BinaryStaticReport",
+    "ELFAnalysisReport",
+    "ELFSectionAnalysis",
     "TransportProtocol",
     "AppProtocol",
     "DNSResourceRecord",
