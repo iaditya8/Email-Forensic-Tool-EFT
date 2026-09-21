@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+from eft.analysis.elf_analyzer import ELFBinaryAnalyzer
 from eft.analysis.ole_analyzer import OLEMacroAnalyzer
 from eft.analysis.pe_analyzer import PEBinaryAnalyzer, calculate_shannon_entropy, classify_entropy
 from eft.models.pe_ole import BinaryStaticReport
@@ -13,10 +14,11 @@ from eft.models.threat import RiskSeverity
 
 
 class BinaryStaticAnalyzer:
-    """Master static analyzer for Portable Executables (PE), OLE documents, and binary artifacts."""
+    """Master static analyzer for Portable Executables (PE), Linux ELFs, OLE documents, and binary artifacts."""
 
     def __init__(self) -> None:
         self.pe_analyzer = PEBinaryAnalyzer()
+        self.elf_analyzer = ELFBinaryAnalyzer()
         self.ole_analyzer = OLEMacroAnalyzer()
 
     def analyze(
@@ -51,6 +53,7 @@ class BinaryStaticAnalyzer:
         entropy_tier = classify_entropy(overall_entropy)
 
         pe_report = None
+        elf_report = None
         ole_report = None
         format_category = "Raw Binary / Unknown"
         remediation_advice: List[str] = []
@@ -59,6 +62,9 @@ class BinaryStaticAnalyzer:
         if data.startswith(b"MZ"):
             format_category = "Windows Portable Executable (PE)"
             pe_report = self.pe_analyzer.analyze(data)
+        elif data.startswith(b"\x7fELF"):
+            format_category = "Linux / Unix Executable & Linkable Format (ELF)"
+            elf_report = self.elf_analyzer.analyze(data)
         elif data.startswith(b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"):
             format_category = "Microsoft OLE Compound Document"
             ole_report = self.ole_analyzer.analyze(data)
@@ -85,6 +91,23 @@ class BinaryStaticAnalyzer:
                     [
                         "Submit binary artifact to an isolated dynamic malware sandbox for detonation analysis.",
                         "Verify file provenance, code-signing certificate, and distribution channel.",
+                    ]
+                )
+        elif elf_report and elf_report.is_valid_elf:
+            threat_score = elf_report.threat_score
+            verdict = elf_report.verdict
+            is_suspicious = verdict in ("SUSPICIOUS", "MALICIOUS")
+            if verdict == "MALICIOUS":
+                remediation_advice.extend(
+                    [
+                        "Quarantine Linux ELF binary and block executable SHA-256 across endpoint agents.",
+                        "Check for memory injection, ptrace hooks, or unauthorized outbound socket listeners.",
+                    ]
+                )
+            elif verdict == "SUSPICIOUS":
+                remediation_advice.extend(
+                    [
+                        "Analyze suspicious symbols and binary section permissions in an isolated Linux containment sandbox.",
                     ]
                 )
         elif ole_report and ole_report.is_ole_compound_document:
@@ -135,6 +158,12 @@ class BinaryStaticAnalyzer:
                 f"Entropy: {pe_report.overall_entropy:.2f} ({pe_report.overall_entropy_level.value}), "
                 f"Packed: {pe_report.is_packed}, Suspicious APIs: {len(pe_report.suspicious_apis)}."
             )
+        elif elf_report and elf_report.is_valid_elf:
+            summary_parts.append(
+                f"Format: {elf_report.architecture}, Type: {elf_report.file_type}, Sections: {elf_report.section_count}, "
+                f"Entropy: {elf_report.overall_entropy:.2f} ({elf_report.overall_entropy_level.value}), "
+                f"Packed: {elf_report.is_packed}, Suspicious Symbols: {len(elf_report.suspicious_symbols)}."
+            )
         elif ole_report and ole_report.is_ole_compound_document:
             summary_parts.append(
                 f"Format: OLE Compound Document, Streams: {len(ole_report.stream_hierarchy)}, "
@@ -158,6 +187,7 @@ class BinaryStaticAnalyzer:
             hashes=hashes,
             format_category=format_category,
             pe_analysis=pe_report,
+            elf_analysis=elf_report,
             ole_analysis=ole_report,
             overall_entropy=overall_entropy,
             overall_entropy_level=entropy_tier,

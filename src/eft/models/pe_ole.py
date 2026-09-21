@@ -183,8 +183,58 @@ class OLEAnalysisReport(BaseModel):
     verdict: str = "BENIGN"  # BENIGN, SUSPICIOUS, MALICIOUS
 
 
+class ELFSectionAnalysis(BaseModel):
+    """Forensic analysis of an individual Linux/Unix ELF section."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    name: str
+    section_type: str = "PROGBITS"
+    virtual_address: int = 0
+    raw_data_offset: int = 0
+    raw_data_size: int = 0
+    entropy: float = Field(default=0.0, ge=0.0, le=8.0)
+    entropy_level: EntropyLevel = EntropyLevel.NORMAL
+
+    is_executable: bool = False
+    is_writable: bool = False
+    is_readable: bool = True
+    is_wx: bool = False
+    flags_hex: str = "0x0"
+
+
+class ELFAnalysisReport(BaseModel):
+    """Detailed forensic report for a Linux/Unix Executable and Linkable Format (ELF) binary."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    is_valid_elf: bool = True
+    architecture: str = "Unknown"  # "ELF64 (x86-64)", "ELF32 (i386)", "ELF64 (ARM64 / AArch64)", etc.
+    ei_class: str = "64-bit"
+    endianness: str = "Little-Endian"
+    os_abi: str = "UNIX - System V"
+    file_type: str = "Executable (ET_EXEC)"
+    machine: str = "Advanced Micro Devices X86-64"
+    entry_point: int = 0
+    section_count: int = 0
+    program_header_count: int = 0
+    sections: List[ELFSectionAnalysis] = Field(default_factory=list)
+    imported_libraries: List[str] = Field(default_factory=list)  # e.g., libc.so.6, libpthread.so.0
+    imported_symbols: List[str] = Field(default_factory=list)
+    suspicious_symbols: List[str] = Field(default_factory=list)
+    interpreter: Optional[str] = None
+    has_nx_stack: bool = True
+    overall_entropy: float = Field(default=0.0, ge=0.0, le=8.0)
+    overall_entropy_level: EntropyLevel = EntropyLevel.NORMAL
+    is_packed: bool = False
+    detected_packers: List[str] = Field(default_factory=list)
+    forensic_alerts: List[str] = Field(default_factory=list)
+    threat_score: float = Field(default=0.0, ge=0.0, le=100.0)
+    verdict: str = "BENIGN"  # BENIGN, SUSPICIOUS, MALICIOUS
+
+
 class BinaryStaticReport(BaseModel):
-    """Master forensic report for static PE, OLE, and binary file artifact analysis."""
+    """Master forensic report for static PE, ELF, OLE, and binary file artifact analysis."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -195,6 +245,7 @@ class BinaryStaticReport(BaseModel):
     format_category: str = "Unknown"
 
     pe_analysis: Optional[PEAnalysisReport] = None
+    elf_analysis: Optional[ELFAnalysisReport] = None
     ole_analysis: Optional[OLEAnalysisReport] = None
 
     overall_entropy: float = Field(default=0.0, ge=0.0, le=8.0)
