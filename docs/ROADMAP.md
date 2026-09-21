@@ -277,9 +277,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build an anomaly detection engine that tracks Windows Security Event IDs 4624 (Successful Logon), 4625 (Failed Logon / Brute Force), 4672 (Special Privileges Assigned), 7045 (New Service Installed), and 4697 (Service Installation Attempt).
   * *Why:* Detects brute-force credential stuffing, Pass-the-Hash, Golden Ticket abuses, and persistence mechanisms.
 * **Done when:**
-  - [ ] Correlates logon types (Type 2: Interactive, Type 3: Network, Type 10: RDP) and flags abnormal hours or brute-force spikes.
-  - [ ] Detects persistence mechanisms (new service creation, scheduled task creation Event ID 4698).
-  - [ ] Synthesizes events into the unified UTC Master Timeline.
+  - [x] Correlates logon types (Type 2: Interactive, Type 3: Network, Type 10: RDP) and flags abnormal hours or brute-force spikes.
+  - [x] Detects persistence mechanisms (new service creation, scheduled task creation Event ID 4698).
+  - [x] Synthesizes events into the unified UTC Master Timeline.
 
 ### Task 9.3: Cloud Audit Log Ingestion (M365 & Google Workspace)
 * **What needs to be built, and why:**
