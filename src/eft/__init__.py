@@ -2,6 +2,7 @@ from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
 from eft.analysis.domain_osint import DomainOSINTAnalyzer
+from eft.analysis.file_analyzer import FileArtifactAnalyzer
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
@@ -23,6 +24,12 @@ from eft.ingestion.header_decomposer import HeaderDecomposer
 from eft.ingestion.mbox_parser import MBOXParser
 from eft.ingestion.mime_decomposer import MIMETreeDecomposer
 from eft.ingestion.msg_parser import MSGParser
+from eft.models.binary import (
+    FileArtifactReport,
+    FileFormatCategory,
+    FileTypeIdentification,
+    MagicByteSignature,
+)
 from eft.models.canonical import (
     ARCChain,
     AttachmentAnalysisReport,
@@ -93,7 +100,7 @@ from eft.ui.map_visualizer import TransitMapVisualizer
 from eft.ui.sanitizer import HTMLSanitizer
 from eft.ui.threat_card import ThreatCardRenderer
 
-__version__ = "0.1.0"
+__version__ = "1.2.0"
 
 
 __all__ = [
@@ -113,6 +120,7 @@ __all__ = [
     "BECDetector",
     "ContentObfuscationDetector",
     "AttachmentThreatScanner",
+    "FileArtifactAnalyzer",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
@@ -181,7 +189,8 @@ __all__ = [
     "BIMIPosture",
     "DNSAuthPosture",
     "BrandMatchResult",
-    "__version__",
+    "FileFormatCategory",
+    "MagicByteSignature",
+    "FileTypeIdentification",
+    "FileArtifactReport",
 ]
-
-__version__ = "1.0.0"
