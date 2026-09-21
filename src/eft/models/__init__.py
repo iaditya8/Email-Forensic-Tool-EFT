@@ -76,6 +76,14 @@ from eft.models.logon_persistence import (
     ServiceInstalledEvent,
     WindowsLogonType,
 )
+from eft.models.memory_forensics import (
+    ExtractedStringItem,
+    MemoryDumpFormat,
+    MemoryDumpMetadata,
+    MemoryExtractionReport,
+    StringEncoding,
+    StringStatistics,
+)
 from eft.models.metadata import (
     AudioVideoMetadata,
     DocumentMetadata,
@@ -244,4 +252,10 @@ __all__ = [
     "GoogleAdminAuditEvent",
     "CloudAnomalyAlert",
     "CloudAuditReport",
+    "MemoryDumpFormat",
+    "StringEncoding",
+    "ExtractedStringItem",
+    "MemoryDumpMetadata",
+    "StringStatistics",
+    "MemoryExtractionReport",
 ]
