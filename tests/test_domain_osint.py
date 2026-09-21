@@ -110,7 +110,9 @@ def test_dns_spf_dangerous_permissive_qualifier(analyzer: DomainOSINTAnalyzer):
         },
     }
 
-    report = analyzer.analyze("admin@bad-config.org", offline=True, custom_dns_records=custom_records)
+    report = analyzer.analyze(
+        "admin@bad-config.org", offline=True, custom_dns_records=custom_records
+    )
 
     assert report.dns_posture.spf.strictness == SPFStrictness.PERMISSIVE
     assert report.dns_posture.spf.is_valid is False
@@ -129,7 +131,9 @@ def test_dns_missing_spf_and_missing_dmarc(analyzer: DomainOSINTAnalyzer):
         }
     }
 
-    report = analyzer.analyze("user@unprotected-domain.net", offline=True, custom_dns_records=custom_records)
+    report = analyzer.analyze(
+        "user@unprotected-domain.net", offline=True, custom_dns_records=custom_records
+    )
 
     assert report.dns_posture.spf.strictness == SPFStrictness.MISSING
     assert report.dns_posture.dmarc.enforcement == DMARCEnforcement.MISSING
@@ -169,7 +173,9 @@ def test_dkim_selector_discovery(analyzer: DomainOSINTAnalyzer):
             "TXT": ["v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0..."],
         },
         "default._bimi.enterprise.corp": {
-            "TXT": ["v=BIMI1; l=https://enterprise.corp/logo.svg; a=https://enterprise.corp/vmc.pem"],
+            "TXT": [
+                "v=BIMI1; l=https://enterprise.corp/logo.svg; a=https://enterprise.corp/vmc.pem"
+            ],
         },
     }
 
@@ -220,7 +226,9 @@ def test_typosquat_lookalike_detection(analyzer: DomainOSINTAnalyzer):
         }
     }
 
-    report = analyzer.analyze("support@micros0ft.com", offline=True, custom_dns_records=custom_records)
+    report = analyzer.analyze(
+        "support@micros0ft.com", offline=True, custom_dns_records=custom_records
+    )
     assert report.brand_risk is not None
     assert report.brand_risk.matched_brand_domain == "microsoft.com"
     assert report.brand_risk.risk_indicator in {"CRITICAL", "HIGH_RISK"}
@@ -258,7 +266,9 @@ def test_disposable_email_domain_detection(analyzer: DomainOSINTAnalyzer):
         }
     }
 
-    report = analyzer.analyze("hacker@mailinator.com", offline=True, custom_dns_records=custom_records)
+    report = analyzer.analyze(
+        "hacker@mailinator.com", offline=True, custom_dns_records=custom_records
+    )
     assert report.category == DomainCategory.DISPOSABLE
     assert report.disposable_service is not None
     assert report.reputation_score >= 40.0
@@ -297,7 +307,9 @@ def test_trusted_partner_vendor_mx_match(analyzer: DomainOSINTAnalyzer):
         },
     }
 
-    report = analyzer.analyze("billing@acme-vendor.com", offline=True, custom_dns_records=custom_records)
+    report = analyzer.analyze(
+        "billing@acme-vendor.com", offline=True, custom_dns_records=custom_records
+    )
     assert len(report.dns_posture.mx_records) == 1
     mx = report.dns_posture.mx_records[0]
     assert mx.matches_trusted_vendor is True
@@ -310,11 +322,11 @@ def test_trusted_partner_vendor_mx_match(analyzer: DomainOSINTAnalyzer):
 
 
 def test_unresolved_inactive_domain(analyzer: DomainOSINTAnalyzer):
-    custom_records: Dict[str, Dict[str, List[str]]] = {
-        "completely-dead-domain-xyz.net": {}
-    }
+    custom_records: Dict[str, Dict[str, List[str]]] = {"completely-dead-domain-xyz.net": {}}
 
-    report = analyzer.analyze("user@completely-dead-domain-xyz.net", offline=True, custom_dns_records=custom_records)
+    report = analyzer.analyze(
+        "user@completely-dead-domain-xyz.net", offline=True, custom_dns_records=custom_records
+    )
     assert report.category == DomainCategory.UNRESOLVED
     assert report.dns_posture.has_mx is False
     assert len(report.dns_posture.a_records) == 0

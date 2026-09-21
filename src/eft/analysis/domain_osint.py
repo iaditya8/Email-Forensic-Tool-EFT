@@ -43,41 +43,79 @@ from eft.models.threat import RiskFactor, RiskSeverity, RiskVectorType
 logger = logging.getLogger(__name__)
 
 # Extended list of disposable/throwaway email providers
-EXTENDED_DISPOSABLE_DOMAINS: Set[str] = DISPOSABLE_DOMAINS.union({
-    "10minutemail.net",
-    "guerrillamailblock.com",
-    "burnermail.io",
-    "fakeinbox.com",
-    "nada.ltd",
-    "generator.email",
-    "inboxkitten.com",
-    "mohmal.com",
-    "crazymailing.com",
-    "fakemailgenerator.com",
-    "tempail.com",
-    "emailondeck.com",
-    "trashmail.net",
-    "mytemp.email",
-    "disposablemail.com",
-    "dropmail.me",
-    "minuteinbox.com",
-    "internxt.com/temporary-email",
-    "tmailor.com",
-})
+EXTENDED_DISPOSABLE_DOMAINS: Set[str] = DISPOSABLE_DOMAINS.union(
+    {
+        "10minutemail.net",
+        "guerrillamailblock.com",
+        "burnermail.io",
+        "fakeinbox.com",
+        "nada.ltd",
+        "generator.email",
+        "inboxkitten.com",
+        "mohmal.com",
+        "crazymailing.com",
+        "fakemailgenerator.com",
+        "tempail.com",
+        "emailondeck.com",
+        "trashmail.net",
+        "mytemp.email",
+        "disposablemail.com",
+        "dropmail.me",
+        "minuteinbox.com",
+        "internxt.com/temporary-email",
+        "tmailor.com",
+    }
+)
 
 # Homoglyph character substitution map (Cyrillic, Greek, lookalike Latin)
 HOMOGLYPH_MAP: Dict[str, str] = {
-    "а": "a", "à": "a", "á": "a", "â": "a", "ã": "a", "ä": "a", "å": "a", "α": "a",
-    "с": "c", "ç": "c", "ϲ": "c",
-    "е": "e", "è": "e", "é": "e", "ê": "e", "ë": "e", "ε": "e",
-    "і": "i", "í": "i", "ì": "i", "ï": "i", "ι": "i", "1": "i", "!": "i",
+    "а": "a",
+    "à": "a",
+    "á": "a",
+    "â": "a",
+    "ã": "a",
+    "ä": "a",
+    "å": "a",
+    "α": "a",
+    "с": "c",
+    "ç": "c",
+    "ϲ": "c",
+    "е": "e",
+    "è": "e",
+    "é": "e",
+    "ê": "e",
+    "ë": "e",
+    "ε": "e",
+    "і": "i",
+    "í": "i",
+    "ì": "i",
+    "ï": "i",
+    "ι": "i",
+    "1": "i",
+    "!": "i",
     "ј": "j",
-    "о": "o", "ò": "o", "ó": "o", "ô": "o", "õ": "o", "ö": "o", "ο": "o", "0": "o",
-    "р": "p", "ρ": "p",
-    "ѕ": "s", "ș": "s", "$": "s", "5": "s",
-    "у": "y", "ý": "y", "ÿ": "y", "γ": "y",
-    "х": "x", "χ": "x",
-    "ѵ": "v", "ν": "v",
+    "о": "o",
+    "ò": "o",
+    "ó": "o",
+    "ô": "o",
+    "õ": "o",
+    "ö": "o",
+    "ο": "o",
+    "0": "o",
+    "р": "p",
+    "ρ": "p",
+    "ѕ": "s",
+    "ș": "s",
+    "$": "s",
+    "5": "s",
+    "у": "y",
+    "ý": "y",
+    "ÿ": "y",
+    "γ": "y",
+    "х": "x",
+    "χ": "x",
+    "ѵ": "v",
+    "ν": "v",
     "ԁ": "d",
     "ԛ": "q",
     "ԍ": "g",
@@ -525,11 +563,15 @@ class DomainOSINTAnalyzer:
             elif all_mech.startswith("?"):
                 qualifier = "?all"
                 strictness = SPFStrictness.NEUTRAL
-                warnings.append("SPF record uses neutral qualifier (?all), offering zero spoofing protection.")
+                warnings.append(
+                    "SPF record uses neutral qualifier (?all), offering zero spoofing protection."
+                )
 
         # Estimate DNS mechanism lookup count (RFC limit = 10)
         lookup_types = ("include:", "a", "mx", "ptr", "exists:", "redirect=")
-        lookup_count = sum(1 for m in mechanisms if any(m.lower().startswith(lt) for lt in lookup_types))
+        lookup_count = sum(
+            1 for m in mechanisms if any(m.lower().startswith(lt) for lt in lookup_types)
+        )
         if lookup_count > 10:
             warnings.append(
                 f"SPF record contains {lookup_count} DNS lookups, exceeding RFC 7208 limit of 10."
@@ -558,7 +600,9 @@ class DomainOSINTAnalyzer:
                 rua_uris=[],
                 ruf_uris=[],
                 enforcement=DMARCEnforcement.MISSING,
-                warnings=["No DMARC record found. Domain is vulnerable to direct address spoofing."],
+                warnings=[
+                    "No DMARC record found. Domain is vulnerable to direct address spoofing."
+                ],
                 is_valid=False,
             )
 
@@ -592,10 +636,14 @@ class DomainOSINTAnalyzer:
             enforcement = DMARCEnforcement.QUARANTINE
         else:
             enforcement = DMARCEnforcement.NONE
-            warnings.append("DMARC policy is set to 'none' (monitoring only); spoofed messages will still be delivered.")
+            warnings.append(
+                "DMARC policy is set to 'none' (monitoring only); spoofed messages will still be delivered."
+            )
 
         if pct < 100:
-            warnings.append(f"DMARC enforcement percentage is only {pct}%, leaving {100-pct}% of traffic unenforced.")
+            warnings.append(
+                f"DMARC enforcement percentage is only {pct}%, leaving {100 - pct}% of traffic unenforced."
+            )
 
         if not rua:
             warnings.append("DMARC record lacks an aggregate reporting URI (rua=).")
@@ -716,7 +764,11 @@ class DomainOSINTAnalyzer:
             is_combosquat = (
                 brand_stem in target_stem
                 or target_stem in brand_stem
-                or any(target_stem.startswith(f"{brand_stem}-") or target_stem.endswith(f"-{brand_stem}") for _ in [1])
+                or any(
+                    target_stem.startswith(f"{brand_stem}-")
+                    or target_stem.endswith(f"-{brand_stem}")
+                    for _ in [1]
+                )
             ) and len(target_stem) != len(brand_stem)
 
             if has_homoglyphs and (trans_registered == brand_stem or dist_trans <= 1):
@@ -785,23 +837,26 @@ class DomainOSINTAnalyzer:
     # -------------------------------------------------------------------------
 
     @classmethod
-    def _check_disposable(
-        cls, domain: str, registered_domain: str
-    ) -> Tuple[bool, Optional[str]]:
+    def _check_disposable(cls, domain: str, registered_domain: str) -> Tuple[bool, Optional[str]]:
         """Check if domain belongs to a disposable or temporary email provider."""
         for d in [domain, registered_domain]:
             if d in EXTENDED_DISPOSABLE_DOMAINS:
                 return True, f"Known disposable email service: {d}"
         # Heuristic keywords for temporary mailboxes
-        disp_keywords = ["tempmail", "disposable", "guerrillamail", "10minutemail", "fakemail", "throwaway"]
+        disp_keywords = [
+            "tempmail",
+            "disposable",
+            "guerrillamail",
+            "10minutemail",
+            "fakemail",
+            "throwaway",
+        ]
         if any(k in domain for k in disp_keywords):
             return True, "Heuristic match for disposable email pattern"
         return False, None
 
     @classmethod
-    def _check_freemail(
-        cls, domain: str, registered_domain: str
-    ) -> Tuple[bool, Optional[str]]:
+    def _check_freemail(cls, domain: str, registered_domain: str) -> Tuple[bool, Optional[str]]:
         """Check if domain is a public freemail webmail provider."""
         for d in [domain, registered_domain]:
             if d in FREEMAIL_DOMAINS:
@@ -886,7 +941,9 @@ class DomainOSINTAnalyzer:
         # 2. Disposable Email Service
         if is_disposable:
             score += 40.0
-            remediation.append("Block disposable email service domains from account registration and email gateway.")
+            remediation.append(
+                "Block disposable email service domains from account registration and email gateway."
+            )
             factors.append(
                 RiskFactor(
                     vector=RiskVectorType.AUTHENTICATION,
@@ -901,7 +958,9 @@ class DomainOSINTAnalyzer:
         spf = dns_posture.spf
         if spf.strictness == SPFStrictness.MISSING:
             score += 15.0
-            remediation.append("Publish a valid SPF record with hardfail (`-all`) or softfail (`~all`).")
+            remediation.append(
+                "Publish a valid SPF record with hardfail (`-all`) or softfail (`~all`)."
+            )
             factors.append(
                 RiskFactor(
                     vector=RiskVectorType.AUTHENTICATION,
@@ -913,7 +972,9 @@ class DomainOSINTAnalyzer:
             )
         elif spf.strictness == SPFStrictness.PERMISSIVE:
             score += 25.0
-            remediation.append("Remove dangerous `+all` qualifier from SPF record; replace with `-all`.")
+            remediation.append(
+                "Remove dangerous `+all` qualifier from SPF record; replace with `-all`."
+            )
             factors.append(
                 RiskFactor(
                     vector=RiskVectorType.AUTHENTICATION,
@@ -939,7 +1000,9 @@ class DomainOSINTAnalyzer:
         dmarc = dns_posture.dmarc
         if dmarc.enforcement == DMARCEnforcement.MISSING:
             score += 20.0
-            remediation.append("Deploy a DMARC record at `_dmarc.<domain>` starting with `p=quarantine` or `p=reject`.")
+            remediation.append(
+                "Deploy a DMARC record at `_dmarc.<domain>` starting with `p=quarantine` or `p=reject`."
+            )
             factors.append(
                 RiskFactor(
                     vector=RiskVectorType.AUTHENTICATION,
@@ -951,7 +1014,9 @@ class DomainOSINTAnalyzer:
             )
         elif dmarc.enforcement == DMARCEnforcement.NONE:
             score += 10.0
-            remediation.append("Upgrade DMARC policy from `p=none` (monitoring) to `p=quarantine` or `p=reject`.")
+            remediation.append(
+                "Upgrade DMARC policy from `p=none` (monitoring) to `p=quarantine` or `p=reject`."
+            )
             factors.append(
                 RiskFactor(
                     vector=RiskVectorType.AUTHENTICATION,
@@ -965,7 +1030,9 @@ class DomainOSINTAnalyzer:
         # 5. Mail Routing & MX Presence
         if not dns_posture.has_mx and target_info["is_email_address"]:
             score += 15.0
-            remediation.append("Domain has no MX records and cannot receive standard inbound email.")
+            remediation.append(
+                "Domain has no MX records and cannot receive standard inbound email."
+            )
             factors.append(
                 RiskFactor(
                     vector=RiskVectorType.AUTHENTICATION,
@@ -1023,6 +1090,8 @@ class DomainOSINTAnalyzer:
             )
 
         if not remediation:
-            remediation.append("Maintain current strict SPF/DMARC policy enforcement and periodic DKIM key rotation.")
+            remediation.append(
+                "Maintain current strict SPF/DMARC policy enforcement and periodic DKIM key rotation."
+            )
 
         return final_score, severity, factors, summary, remediation
