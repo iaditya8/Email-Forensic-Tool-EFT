@@ -298,9 +298,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build a memory triage engine `MemoryArtifactAnalyzer` capable of reading raw RAM acquisition images (`.raw`, `.dmp`, `.vmem`, `.bin`) and extracting ASCII and UTF-16LE strings at high speed using optimized chunking.
   * *Why:* Advanced malware operates fileless in memory without saving artifacts to disk.
 * **Done when:**
-  - [ ] Ingests multi-gigabyte memory dumps in streaming chunks with minimal RAM overhead.
-  - [ ] Computes cryptographic acquisition hashes and records custody manifest.
-  - [ ] High-speed extraction of formatted strings with minimum length thresholds.
+  - [x] Ingests multi-gigabyte memory dumps in streaming chunks with minimal RAM overhead.
+  - [x] Computes cryptographic acquisition hashes and records custody manifest.
+  - [x] High-speed extraction of formatted strings with minimum length thresholds.
 
 ### Task 10.2: In-Memory Regex Pattern & IoC Matcher
 * **What needs to be built, and why:**
