@@ -52,8 +52,8 @@ def test_cli_lookup_json_output() -> None:
 
 
 def test_cli_osint_alias() -> None:
-    """Verify `eft osint` works as an alias for `eft lookup`."""
-    result = runner.invoke(app, ["osint", "security@partner.io", "--offline", "-j"])
+    """Verify `eft osint lookup` works with JSON output."""
+    result = runner.invoke(app, ["osint", "lookup", "security@partner.io", "--offline", "-j"])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
     assert data["input_target"] == "security@partner.io"
