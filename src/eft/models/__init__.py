@@ -22,6 +22,18 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.dns_forensics import (
+    DGADomainAlert,
+    DNSAnomalyType,
+    DNSBeaconingAnalysis,
+    DNSThreatReport,
+    DNSTunnelingAlert,
+    DNSTunnelingMethod,
+    FastFluxAlert,
+    FluxType,
+    LargeTXTPayloadRecord,
+    SubdomainEntropyAnalysis,
+)
 from eft.models.metadata import (
     AudioVideoMetadata,
     DocumentMetadata,
@@ -146,4 +158,14 @@ __all__ = [
     "PacketRecord",
     "NetworkFlow",
     "PCAPAnalysisReport",
+    "DNSTunnelingMethod",
+    "DNSAnomalyType",
+    "FluxType",
+    "SubdomainEntropyAnalysis",
+    "DNSTunnelingAlert",
+    "FastFluxAlert",
+    "DGADomainAlert",
+    "DNSBeaconingAnalysis",
+    "LargeTXTPayloadRecord",
+    "DNSThreatReport",
 ]

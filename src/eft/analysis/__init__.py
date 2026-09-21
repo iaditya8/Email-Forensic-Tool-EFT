@@ -4,6 +4,7 @@ from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
 from eft.analysis.binary_static_analyzer import BinaryStaticAnalyzer
+from eft.analysis.dns_threat_analyzer import DNSThreatAnalyzer
 from eft.analysis.domain_osint import DomainOSINTAnalyzer
 from eft.analysis.file_analyzer import FileArtifactAnalyzer
 from eft.analysis.metadata_extractor import MetadataExtractor
@@ -32,4 +33,5 @@ __all__ = [
     "OLEMacroAnalyzer",
     "BinaryStaticAnalyzer",
     "NetworkPCAPAnalyzer",
+    "DNSThreatAnalyzer",
 ]

@@ -117,6 +117,14 @@ class NetworkPCAPAnalyzer:
 
     def __init__(self, net_intel: Optional[NetworkIntelligenceService] = None) -> None:
         self.net_intel = net_intel or NetworkIntelligenceService()
+        self.last_parsed_packets: List[PacketRecord] = []
+
+    def extract_packet_records(
+        self, data_or_path: Union[bytes, str, Path], filename: Optional[str] = None
+    ) -> List[PacketRecord]:
+        """Parse capture and return dissected PacketRecord instances."""
+        self.analyze(data_or_path, filename=filename)
+        return self.last_parsed_packets
 
     def analyze(
         self, data_or_path: Union[bytes, str, Path], filename: Optional[str] = None
@@ -341,6 +349,8 @@ class NetworkPCAPAnalyzer:
                         f_data["tcp_state"] = "ESTABLISHED"
                 elif "FIN" in pkt_rec.tcp_flags or "RST" in pkt_rec.tcp_flags:
                     f_data["tcp_state"] = "CLOSED"
+
+        self.last_parsed_packets = packet_records
 
         # GeoIP & ASN Enrichment for flows and external IPs
         geoip_summary: Dict[str, int] = {}
