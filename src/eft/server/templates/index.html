@@ -1016,8 +1016,31 @@
       document.getElementById('confidence-val').innerText = `Confidence: ${conf}%`;
 
       document.getElementById('res-subject').innerText = email.subject || "(No Subject)";
-      document.getElementById('res-from').innerText = email.sender ? `${email.sender.display_name || ''} <${email.sender.address || ''}>` : "-";
-      document.getElementById('res-to').innerText = (email.recipients && email.recipients.length > 0) ? email.recipients.map(r => r.address).join(', ') : "-";
+      
+      // Sender (From)
+      let fromStr = "";
+      if (email.from_address) {
+        fromStr = email.from_address;
+      } else if (email.sender) {
+        fromStr = typeof email.sender === 'object' ? `${email.sender.display_name || ''} <${email.sender.address || ''}>`.trim() : String(email.sender);
+      } else if (email.headers && (email.headers.from || email.headers.From)) {
+        const rawFrom = email.headers.from || email.headers.From;
+        fromStr = Array.isArray(rawFrom) ? rawFrom.join(', ') : String(rawFrom);
+      }
+      document.getElementById('res-from').innerText = fromStr || "-";
+
+      // Recipient (To)
+      let toStr = "";
+      if (email.to_addresses && email.to_addresses.length > 0) {
+        toStr = email.to_addresses.join(', ');
+      } else if (email.recipients && email.recipients.length > 0) {
+        toStr = email.recipients.map(r => typeof r === 'object' ? (r.address || r.display_name || JSON.stringify(r)) : String(r)).join(', ');
+      } else if (email.headers && (email.headers.to || email.headers.To)) {
+        const rawTo = email.headers.to || email.headers.To;
+        toStr = Array.isArray(rawTo) ? rawTo.join(', ') : String(rawTo);
+      }
+      document.getElementById('res-to').innerText = toStr || "-";
+
       document.getElementById('res-sha256').innerText = data.sha256 || (data.hashes ? data.hashes.sha256 : "-");
 
       renderCriticalAlerts(risk.findings || risk.contributing_factors || []);
@@ -1050,7 +1073,7 @@
           : email.evidence_timeline || (Array.isArray(email.timeline) ? email.timeline : [])
       );
       renderRawTab(email.headers || {}, email.body_plain || email.body_html || "");
-      renderEmailSenderOSINT(email.sender ? email.sender.address : null);
+      renderEmailSenderOSINT(fromStr || null);
     }
 
     function renderCriticalAlerts(findings) {
