@@ -54,6 +54,17 @@ from eft.models.evtx import (
     SysmonNetworkEvent,
     SysmonProcessCreateEvent,
 )
+from eft.models.logon_persistence import (
+    AccountManagementEvent,
+    LogonEvent,
+    PrivilegeAssignedEvent,
+    ScheduledTaskEvent,
+    SecurityAnomalyAlert,
+    SecurityLogonReport,
+    SecurityThreatClassification,
+    ServiceInstalledEvent,
+    WindowsLogonType,
+)
 from eft.models.metadata import (
     AudioVideoMetadata,
     DocumentMetadata,
@@ -204,4 +215,13 @@ __all__ = [
     "SuspiciousProcessAnomaly",
     "ProcessTreeNode",
     "EVTXAnalysisReport",
+    "WindowsLogonType",
+    "SecurityThreatClassification",
+    "LogonEvent",
+    "PrivilegeAssignedEvent",
+    "ServiceInstalledEvent",
+    "ScheduledTaskEvent",
+    "AccountManagementEvent",
+    "SecurityAnomalyAlert",
+    "SecurityLogonReport",
 ]
