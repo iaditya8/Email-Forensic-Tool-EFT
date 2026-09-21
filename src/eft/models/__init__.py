@@ -16,6 +16,17 @@ from eft.models.canonical import (
     MIMEPartNode,
     SourceFileInfo,
 )
+from eft.models.cloud_audit import (
+    CloudAnomalyAlert,
+    CloudAuditReport,
+    CloudLoginRecord,
+    CloudOAuthConsentRecord,
+    CloudProvider,
+    CloudThreatClassification,
+    GoogleAdminAuditEvent,
+    M365InboxRuleRecord,
+    M365MailboxPermissionRecord,
+)
 from eft.models.credential_leak import (
     CleartextProtocol,
     CredentialLeakageReport,
@@ -224,4 +235,13 @@ __all__ = [
     "AccountManagementEvent",
     "SecurityAnomalyAlert",
     "SecurityLogonReport",
+    "CloudProvider",
+    "CloudThreatClassification",
+    "M365InboxRuleRecord",
+    "M365MailboxPermissionRecord",
+    "CloudOAuthConsentRecord",
+    "CloudLoginRecord",
+    "GoogleAdminAuditEvent",
+    "CloudAnomalyAlert",
+    "CloudAuditReport",
 ]
