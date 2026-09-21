@@ -358,8 +358,8 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Merges all timestamps into a single comprehensive UTC Chronological Timeline, computes an overarching Master Case Risk Score, and produces court-defensible exports.
   * *Why:* Court admissibility requires demonstrating the complete, unbroken chain of events connecting the initial lure to execution, network egress, and memory persistence.
 * **Done when:**
-  - [ ] Aggregates multiple evidence sources under a single Case ID and Examiner manifest.
-  - [ ] Generates unified Court-Admissible PDF, STIX 2.1 Threat Bundle, JSON, and CSV IoC packages.
-  - [ ] Pre- and post-analysis multi-hashing validates 100% zero-byte mutation across all evidence types.
+  - [x] Aggregates multiple evidence sources under a single Case ID and Examiner manifest.
+  - [x] Generates unified Court-Admissible PDF, STIX 2.1 Threat Bundle, JSON, and CSV IoC packages.
+  - [x] Pre- and post-analysis multi-hashing validates 100% zero-byte mutation across all evidence types.
 
 
