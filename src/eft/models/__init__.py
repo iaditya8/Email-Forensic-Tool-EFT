@@ -43,6 +43,17 @@ from eft.models.dns_forensics import (
     LargeTXTPayloadRecord,
     SubdomainEntropyAnalysis,
 )
+from eft.models.evtx import (
+    EVTXAnalysisReport,
+    ProcessThreatClassification,
+    ProcessTreeNode,
+    SuspiciousProcessAnomaly,
+    SysmonEventType,
+    SysmonFileCreateEvent,
+    SysmonImageLoadEvent,
+    SysmonNetworkEvent,
+    SysmonProcessCreateEvent,
+)
 from eft.models.metadata import (
     AudioVideoMetadata,
     DocumentMetadata,
@@ -184,4 +195,13 @@ __all__ = [
     "UnencryptedFileTransferRecord",
     "HighRiskProtocolExposure",
     "CredentialLeakageReport",
+    "SysmonEventType",
+    "ProcessThreatClassification",
+    "SysmonProcessCreateEvent",
+    "SysmonNetworkEvent",
+    "SysmonImageLoadEvent",
+    "SysmonFileCreateEvent",
+    "SuspiciousProcessAnomaly",
+    "ProcessTreeNode",
+    "EVTXAnalysisReport",
 ]
