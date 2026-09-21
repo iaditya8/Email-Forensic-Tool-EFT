@@ -268,9 +268,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build a fast parser `WindowsLogAnalyzer` for binary Windows Event Log files (`.evtx`) with automated filtering and correlation for Microsoft Sysmon and Windows Security events.
   * *Why:* Windows event logs provide the definitive timeline of operating system actions, process spawns, and attacker activity.
 * **Done when:**
-  - [ ] Parses raw `.evtx` files into structured JSON event streams without requiring Windows host APIs.
-  - [ ] Correlates Sysmon Event ID 1 (Process Creation), Event ID 3 (Network Connection), Event ID 7 (Image Loaded), and Event ID 11 (File Create).
-  - [ ] Flags suspicious parent-child process relationships (e.g., `winword.exe` spawning `powershell.exe` or `cmd.exe`).
+  - [x] Parses raw `.evtx` files into structured JSON event streams without requiring Windows host APIs.
+  - [x] Correlates Sysmon Event ID 1 (Process Creation), Event ID 3 (Network Connection), Event ID 7 (Image Loaded), and Event ID 11 (File Create).
+  - [x] Flags suspicious parent-child process relationships (e.g., `winword.exe` spawning `powershell.exe` or `cmd.exe`).
 
 ### Task 9.2: Logon Anomaly, Privilege Escalation & Persistence Timeline
 * **What needs to be built, and why:**
