@@ -13,7 +13,7 @@ import re
 import struct
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from eft.models.evtx import (
@@ -1025,11 +1025,11 @@ class WindowsLogAnalyzer:
         anomalies: List[SuspiciousProcessAnomaly] = []
 
         image_lower = node.image.lower()
-        image_base = Path(image_lower).name
+        image_base = PureWindowsPath(image_lower).name
         cmd_lower = node.command_line.lower()
 
         parent_img_lower = (node.parent_image or "").lower()
-        parent_base = Path(parent_img_lower).name if parent_img_lower else ""
+        parent_base = PureWindowsPath(parent_img_lower).name if parent_img_lower else ""
 
         # 1. Office Macro Spawning Shells / Scripts (T1204.002)
         if parent_base in self.OFFICE_PARENTS:
