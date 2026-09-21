@@ -1,17 +1,17 @@
-# Email Forensic Tool (EFT)
+# Email Forensic Tool (EFT) — Master DFIR Workstation
 
 <div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://www.python.org/)
-[![Version](https://img.shields.io/badge/version-v1.0.0-green.svg)](https://github.com/iaditya8/Email-Forensic-Tool-EFT/releases)
-[![Test Suite](https://img.shields.io/badge/tests-141%20passed-brightgreen.svg)](tests/)
-[![Coverage](https://img.shields.io/badge/coverage-91.5%25-success.svg)](tests/)
-[![Forensic Standard](https://img.shields.io/badge/DFIR-ISO%2FIEC%2027037%20%7C%20RFC%205322-red.svg)](docs/EVIDENCE_INTEGRITY.md)
+[![Version](https://img.shields.io/badge/version-v2.0.0-green.svg)](https://github.com/iaditya8/Email-Forensic-Tool-EFT/releases)
+[![Test Suite](https://img.shields.io/badge/tests-391%20passed-brightgreen.svg)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-88%25-success.svg)](tests/)
+[![Forensic Standard](https://img.shields.io/badge/DFIR-ISO%2FIEC%2027037%20%7C%20RFC%205322-red.svg)](docs/ROADMAP.md)
 
-**An enterprise-grade Digital Forensics and Incident Response (DFIR) suite for email parsing, MTA transit hop reconstruction, cryptographic authentication analysis, phishing detection, threat scoring, and court-defensible evidence reporting.**
+**Enterprise-Grade Digital Forensics & Incident Response (DFIR) Platform for Multi-Modal Evidence Aggregation, Email Analysis, Network PCAPs, Event Logs, Memory Triage, Binary Inspection, and Court-Admissible Reporting.**
 
-[Key Features](#-key-features) • [Architecture](#-system-architecture) • [Quick Start](#-quick-start--python-api) • [Roadmap](#-completed-phases--epics) • [Integrity](#-evidence-integrity--chain-of-custody) • [Installation](#-installation--setup)
+[Key Modules](#-key-forensic-modules) • [System Architecture](#-system-architecture) • [CLI Commands](#-unified-command-line-interface) • [Web Workstation](#-air-gapped-web-workstation) • [Python API](#-python-sdk--programmatic-usage) • [Evidence Integrity](#-cryptographic-evidence-integrity) • [Installation](#-installation--setup)
 
 </div>
 
@@ -19,46 +19,71 @@
 
 ## 📌 Overview
 
-**Email Forensic Tool (EFT)** is an enterprise-grade DFIR solution designed to empower digital forensic investigators, SOC analysts, and incident responders with an end-to-end platform for dissecting electronic communications.
+**Email Forensic Tool (EFT)** is a pure-Python, air-gapped Digital Forensics & Incident Response (DFIR) workstation. Engineered for incident responders, SOC analysts, and legal examiners, EFT unifies analysis across six foundational forensic domains into a single, cohesive case ledger.
 
-Unlike basic mail viewers, EFT treats every input as critical digital evidence. It enforces strict **read-only forensic immutability** (ISO/IEC 27037), computes multi-algorithm cryptographic digests (MD5, SHA-1, SHA-256), deconstructs nested MIME trees, traces transmission relays across global networks with GeoIP intelligence, evaluates email anti-spoofing controls (SPF, DKIM, DMARC, ARC), executes static YARA malware scans, computes composite risk scores (0-100 dial), and outputs court-admissible forensic reports in PDF, JSON, CSV, and STIX 2.1 formats.
+Every ingested artifact is processed under strict **ISO/IEC 27037 read-only immutability**, verified by pre- and post-analysis multi-algorithm cryptographic hashing (`MD5`, `SHA-1`, `SHA-256`, `SHA-512`). Cross-evidence correlation automatically uncovers shared infrastructure, lateral movement, credential theft, and multi-stage attack killchains.
 
 ---
 
-## 🎯 Key Features
+## 🎯 Key Forensic Modules
 
-### 1. Ingestion & Evidence Preservation
-* **Multi-Format Ingestion:** Native parsers for `.eml` (RFC 822/5322), `.msg` (Microsoft Outlook OLE Compound Binary), and `.mbox` (RFC 4155 Unix mailbox archives).
-* **Forensic Immutability (Zero-Byte Mutation):** Strict read-only stream access with pre/post-analysis multi-hash comparison to guarantee evidence integrity.
-* **MIME Tree Decomposer:** Hierarchical decomposition of complex multi-part structures (`multipart/mixed`, `multipart/related`, `multipart/alternative`, nested `message/rfc822`).
-* **Attachment Extraction & Magic Inspection:** Automatic payload extraction with cryptographic digests (MD5, SHA-1, SHA-256) and true file-type magic byte validation to uncover double-extension spoofing (e.g. `invoice.pdf.exe`).
+```
+                                  ┌────────────────────────────────┐
+                                  │   EFT Master DFIR Engine       │
+                                  └────────────────┬───────────────┘
+          ┌─────────────────┬──────────────────────┼──────────────────────┬──────────────────┐
+          │                 │                      │                      │                  │
+    ┌─────▼──────┐   ┌──────▼──────┐        ┌──────▼──────┐        ┌──────▼──────┐    ┌──────▼──────┐
+    │   Email    │   │  Binaries   │        │   Network   │        │ Event Logs  │    │   Memory    │
+    │  Analysis  │   │  & Artifacts│        │    PCAP     │        │ EVTX / Cloud│    │   Triage    │
+    └────────────┘   └─────────────┘        └─────────────┘        └─────────────┘    └─────────────┘
+          │                 │                      │                      │                  │
+          └─────────────────┴──────────────────────┼──────────────────────┴──────────────────┘
+                                                   │
+                                     ┌─────────────▼──────────────┐
+                                     │  Unified Case Aggregator   │
+                                     │  & Court-Ready Exporters   │
+                                     │  (PDF / STIX / CSV / JSON) │
+                                     └────────────────────────────┘
+```
 
-### 2. Header & Network Transit Forensics
-* **Hop-by-Hop Relay Reconstruction:** Chronological reconstruction of Mail Transfer Agent (MTA) traversal from origin to recipient.
-* **Latency & Anomaly Detection:** Real-time delay calculation to detect clock drift, time-travel anomalies, and forged hops.
-* **Network Intelligence:** GeoIP coordinates, ASN classification, cloud provider detection (AWS, Azure, GCP, Cloudflare), and Tor exit node / VPN proxy flagging.
-* **Multi-Protocol Authentication:** Automated verification of **SPF**, **DKIM** (selector validation & key evaluation), **DMARC** policy alignment, and **ARC** (Authenticated Received Chain).
+### 1. Email Forensic Engine (`eft email`)
+* **Multi-Format Parsers**: RFC 822/5322 `.eml`, Microsoft Outlook OLE Compound Binary `.msg`, and RFC 4155 Unix `.mbox` archives.
+* **MTA Hop Reconstruction**: Chronological parsing of `Received` headers with latency tracking, clock drift alerts, and geodesic map visualization.
+* **Authentication Auditing**: Multi-protocol verification of SPF, DKIM (cryptographic selector and RSA key evaluation), DMARC alignment, and ARC chains.
+* **Phishing & BEC Detection**: IDN homograph punycode detection, anchor-text mismatch identification, display-name spoofing, and zero-width Unicode steganography.
+* **Payload Inspection**: Recursive MIME tree extraction, magic byte mismatch detection, and static YARA attachment scanning.
 
-### 3. Phishing, BEC & Content Forensics
-* **URL Extraction & Defanging:** Complete hyperlink harvesting, anchor-text mismatch detection (`href` targeting different host than anchor text), and safe defanging (`hxxp[://]...`).
-* **IDN Homograph & Punycode Detection:** Detection of spoofed internationalized domain names (e.g., Cyrillic characters mimicking legitimate brands).
-* **Business Email Compromise (BEC):** Executive/VIP impersonation detection, display name spoofing, and asymmetric routing (`From` vs `Reply-To` / `Return-Path`).
-* **Obfuscation & Steganography Detection:** Identification of zero-width Unicode characters (`U+200B`), hidden CSS text (`display:none`, `font-size:0px`), and decoded Base64/Hex/URL-encoded payloads.
-* **Static YARA Attachment Scanning:** DFIR rule engine detecting weaponized VBA macros, PDF action exploits (`/Launch`, `/JavaScript`), executable binaries, and EICAR test payloads.
+### 2. File & Binary Static Inspector (`eft file`)
+* **Magic Byte Engine**: Byte-level header and offset signature validation across 100+ binary, document, archive, and executable formats.
+* **Deception Detection**: Flags double extensions (e.g. `document.pdf.exe`), null byte injection, and Unicode Right-to-Left Override (RLO) attacks.
+* **PE32/PE32+ Dissection**: Section table analysis, section entropy calculations for packer detection, and suspicious Windows API import mapping.
+* **OLE / VBA Macro Engine**: Extracts and categorizes weaponized macros, auto-exec hooks (`AutoOpen`, `Workbook_Open`), and shell execution triggers.
+* **Deep Metadata Extraction**: EXIF geolocation and camera tags from images, PDF revision trees and incremental update histories, and media metadata.
 
-### 4. Evidence Integrity, Timelines & Reporting
-* **Cryptographic Chain of Custody:** Immutable evidence ledger (`EvidenceLedger`) tracking case ID, examiner identity, acquisition timestamps, and event logs.
-* **Chronological Timeline Synthesis:** Standardized UTC event sequence tracing creation, MTA transit hops, DKIM signatures, attachment extractions, and anomalies.
-* **Court-Ready Multi-Format Exports:**
-  * **PDF:** Executive forensic report with speedometer dials, MTA hop tables, and examiner certification statements.
-  * **JSON:** Loss-free structured schema for automation and archival.
-  * **CSV:** Tabular Indicators of Compromise (IoCs) formatted for SIEM/SOAR ingestion.
-  * **STIX 2.1:** Standardized CTI bundles for threat intelligence sharing.
+### 3. Domain & IP OSINT Engine (`eft osint`)
+* **Passive DNS & WHOIS**: Offline registrar and creation date auditing, domain age calculations, and MX/SPF/DKIM/DMARC hygiene assessment.
+* **MaxMind GeoIP Integration**: Resolves IP addresses to autonomous system numbers (ASN), ISP organizations, country codes, and city coordinates.
+* **Threat Intelligence Matching**: Instant correlation against local IoC watchlists and known malicious C2 feeds.
 
-### 5. UI/UX & Visual Analytics
-* **Dual-Pane Email Inspector:** Air-gapped visual HTML sanitizer neutralizing JavaScript, dynamic scripts, and tracking pixels.
-* **MTA Geodesic Transit Map:** Interactive vector world map rendering global MTA transit hops with geodesic flight paths and anomaly highlights.
-* **Composite Threat Score Card (0-100):** Visual risk dial, breakdown bars, and Mermaid factor trees for immediate triage.
+### 4. Network PCAP Forensics (`eft pcap`)
+* **Wire-Speed Dissection**: Analyzes `.pcap` and `.pcapng` packet captures across IPv4, IPv6, TCP, UDP, DNS, HTTP, and TLS handshakes.
+* **DNS Covert Channel Detection**: Calculates Shannon entropy per domain label and monitors query velocity to detect DNS tunneling and data exfiltration.
+* **Cleartext Credential Extraction**: Sniffs and defangs unencrypted HTTP Basic/Bearer auth headers, FTP credentials, Telnet sessions, and SMTP/IMAP logins.
+
+### 5. Windows & Cloud Log Correlator (`eft log`)
+* **Windows Security & Sysmon (EVTX)**: Parses Windows Event Logs for logon types (Interactive, Network, RDP), brute force attacks, service installations (Event 7045), scheduled tasks (Event 4698), and privilege escalation (Event 4672).
+* **Cloud Audit Logs**: Parses Microsoft 365 Unified Audit Logs and Google Workspace Admin logs to detect malicious inbox rules, external mail forwarding, and illicit OAuth consent grants.
+
+### 6. Volatile Memory Dump Triage (`eft mem`)
+* **Streaming Raw Memory Parser**: Ingests multi-gigabyte RAM dumps (`.raw`, `.dmp`, `.vmem`) in streaming memory-mapped blocks with minimal RAM footprint.
+* **In-Memory IoC Matcher**: Scrapes volatile RAM for IPv4/IPv6 addresses, URLs, unencrypted tokens, private keys, and cryptocurrency wallet addresses.
+* **Memory YARA Attribution**: Scans memory segments for C2 beacon signatures (Cobalt Strike, Meterpreter, Mimikatz, Lumma Stealer) and reflective DLL injections.
+
+### 7. Unified Case Ledger & Master Case Report (`eft case`)
+* **Zero-Byte Mutation Assurance**: Dual pre- and post-analysis multi-hashing (`MD5`, `SHA-1`, `SHA-256`, `SHA-512`) verifying ISO/IEC 27037 compliance.
+* **Cross-Evidence Correlation**: Unifies IoCs across all ingested artifacts into an end-to-end attack killchain.
+* **Court-Admissible Exports**: Generates executive PDF reports with legal certifications, STIX 2.1 Threat Intelligence Bundles, RFC 4180 CSV tables, and structured JSON schemas.
 
 ---
 
@@ -66,174 +91,209 @@ Unlike basic mail viewers, EFT treats every input as critical digital evidence. 
 
 ```mermaid
 flowchart TD
-    subgraph EvidenceIntake["1. Evidence Ingestion & Chain of Custody"]
-        SRC["Raw Evidence File (.eml, .msg, .mbox)"]
-        HASH_PRE["Pre-Analysis Multi-Hashing (MD5, SHA-1, SHA-256)"]
-        PARSER["Multi-Format Parser (EML / MSG / MBOX)"]
-        MANIFEST["Evidence Manifest & Custody Ledger"]
-        SRC --> HASH_PRE --> PARSER --> MANIFEST
+    subgraph Intake["1. Multi-Modal Evidence Intake"]
+        E1["Email Files (.eml, .msg, .mbox)"]
+        E2["Binary & Files (.exe, .pdf, .docx)"]
+        E3["Network PCAPs (.pcap, .pcapng)"]
+        E4["Event Logs (.evtx, .json)"]
+        E5["Memory Dumps (.raw, .dmp)"]
+        HASH["Pre-Analysis Multi-Hashing (MD5, SHA-1, SHA-256, SHA-512)"]
+        E1 & E2 & E3 & E4 & E5 --> HASH
     end
 
-    subgraph ForensicCore["2. Canonical Forensic Analysis Engine"]
-        MIME_ENG["MIME Tree & Isolated Body Extractor"]
-        ATT_ENG["Attachment Extractor & Magic Byte Inspector"]
-        AUTH_ENG["SPF / DKIM / DMARC / ARC Verifier"]
-        RELAY_ENG["MTA Relay Hop Reconstructor & GeoIP/ASN"]
-        URL_ENG["URL / Homoglyph & Anchor Mismatch Analyzer"]
-        BEC_ENG["BEC & Display Name Spoofing Detector"]
-        OBF_ENG["Content Obfuscation & Zero-Width Detector"]
-        YARA_ENG["Static YARA Attachment & Macro Scanner"]
-        TIME_ENG["Chronological Timeline & Anomaly Synthesizer"]
-        
-        PARSER --> MIME_ENG & ATT_ENG & AUTH_ENG & RELAY_ENG & URL_ENG & BEC_ENG & OBF_ENG
-        ATT_ENG --> YARA_ENG
-        AUTH_ENG & RELAY_ENG & ATT_ENG --> TIME_ENG
+    subgraph Analyzers["2. Domain Forensic Analyzers"]
+        A_EML["Email Ingester & Header Reconstructor"]
+        A_BIN["Binary Inspector & PE/OLE Analyzer"]
+        A_NET["PCAP Stream & DNS Tunnel Detector"]
+        A_LOG["EVTX & Cloud Audit Correlator"]
+        A_MEM["Memory Stream & YARA Scanner"]
+        A_OSINT["Domain OSINT & GeoIP Engine"]
+        HASH --> A_EML & A_BIN & A_NET & A_LOG & A_MEM & A_OSINT
     end
 
-    subgraph TriageAndScoring["3. Composite Risk & Threat Attribution"]
-        SCORE["ThreatScorer: Composite Risk Engine (0 - 100)"]
-        DIAL["Risk Severity: Clean / Low / Medium / High / Critical"]
-        MIME_ENG & AUTH_ENG & RELAY_ENG & URL_ENG & BEC_ENG & OBF_ENG & YARA_ENG & TIME_ENG --> SCORE --> DIAL
+    subgraph Aggregator["3. Cross-Module Case Correlation"]
+        CORR["MasterCaseAggregator"]
+        KILLCHAIN["Attack Killchain Synthesizer"]
+        TIMELINE["Master UTC Timeline Generator"]
+        SCORE["Composite Risk Engine (0-100)"]
+        A_EML & A_BIN & A_NET & A_LOG & A_MEM & A_OSINT --> CORR
+        CORR --> KILLCHAIN & TIMELINE & SCORE
     end
 
-    subgraph ArtifactExport["4. Presentation & Multi-Format Reporting"]
-        PDF["PDF Forensic Evidence Report"]
-        JSON_EXP["Structured JSON Evidence Artifact"]
-        CSV_IOC["CSV Threat Intelligence IoCs"]
-        STIX["STIX 2.1 Cyber Threat Bundle"]
-        MAP_SVG["Interactive MTA Geodesic Transit Map (SVG)"]
-        CARD_HTML["Air-Gapped Threat Score Card (HTML)"]
-        INSPECT["Dual-Pane Sanitized HTML Inspector"]
-        
-        DIAL --> PDF & JSON_EXP & CSV_IOC & STIX & MAP_SVG & CARD_HTML & INSPECT
+    subgraph Distribution["4. Output & Presentation"]
+        CLI["Unified Master CLI (eft)"]
+        WEB["Air-Gapped Web Workstation (eft serve)"]
+        PDF["Court-Admissible PDF Report"]
+        STIX["STIX 2.1 Threat Bundle"]
+        CSV["RFC 4180 CSV IoC Ledger"]
+        JSON["Structured JSON Schema"]
+        KILLCHAIN & TIMELINE & SCORE --> CLI & WEB & PDF & STIX & CSV & JSON
     end
 ```
 
 ---
 
-## 🚀 Quick Start & Python API
+## 💻 Unified Command-Line Interface
 
-### End-to-End Forensic Analysis Example
+EFT provides a single, unified CLI binary (`eft`):
+
+```bash
+# General Syntax
+eft <MODULE> <COMMAND> [OPTIONS] [ARGUMENTS]
+```
+
+### Module Commands
+
+```bash
+# 1. Email Forensics
+eft email scan suspicious_email.eml --json
+eft email report phish.msg --output report.pdf --format pdf
+eft email map email_transit.eml --output map.html
+
+# 2. File & Binary Inspection
+eft file inspect payload.exe
+eft file entropy sample.bin --graph
+eft file exif document.pdf
+
+# 3. Domain & IP OSINT Triage
+eft osint lookup evil-c2-domain.com
+eft osint ip 185.220.101.5
+
+# 4. Network PCAP Analysis
+eft pcap analyze capture.pcap
+eft pcap dns dns_exfil.pcapng --threshold 3.8
+eft pcap creds traffic.pcap
+
+# 5. Windows & Cloud Event Logs
+eft log evtx Security.evtx --user Administrator
+eft log m365 audit_records.json
+
+# 6. Volatile Memory Dump Triage
+eft mem scan memory.raw --yara rules/malware.yar
+eft mem strings memdump.dmp --min-len 8
+eft mem iocs memory.vmem
+
+# 7. Cross-Module Master Case Aggregation
+eft case analyze email.eml payload.exe capture.pcap security.evtx --case-id CASE-2026-001
+eft case report email.eml payload.exe capture.pcap -o final_case_report.pdf --format pdf
+
+# 8. Air-Gapped Web Workstation
+eft serve --host 127.0.0.1 --port 8000 --open
+```
+
+---
+
+## 🌐 Air-Gapped Web Workstation
+
+Launch the interactive, multi-modal web dashboard with a single command:
+
+```bash
+eft serve --port 8000 --open
+```
+
+### Dashboard Capabilities
+* **Full Tab Navigation**: Switch seamlessly between **Email Workstation**, **File Inspector**, **OSINT Lookup**, **PCAP Analyzer**, **Log Correlator**, **Memory Scanner**, and **Master Case Report**.
+* **Zero External Dependencies**: 100% self-contained Vanilla HTML5/CSS/JavaScript with embedded SVG rendering—no external CDN requests or internet connectivity required.
+* **Interactive Visualizations**: Interactive MTA transit maps, risk dials, timeline charts, and packet breakdown tables.
+
+---
+
+## 🐍 Python SDK & Programmatic Usage
 
 ```python
 from pathlib import Path
-from eft.ingestion.engine import EmailIngester
-from eft.ingestion.attachment_extractor import AttachmentExtractor
-from eft.analysis.auth_verifier import AuthenticationVerifier
-from eft.analysis.relay_analyzer import RelayAnalyzer
-from eft.analysis.network_intelligence import NetworkIntelligenceService
-from eft.analysis.url_analyzer import URLAnalyzer
-from eft.analysis.bec_detector import BECDetector
-from eft.analysis.obfuscation_detector import ContentObfuscationDetector
-from eft.analysis.attachment_scanner import AttachmentThreatScanner
-from eft.analysis.threat_scorer import ThreatScorer
-from eft.reporting.custody import ChainOfCustodyManager
-from eft.reporting.exporter import ForensicReportExporter
-from eft.reporting.timeline import TimelineGenerator
+from eft.reporting.case_aggregator import MasterCaseAggregator
+from eft.reporting.case_exporter import MasterCaseExporter
 
-# 1. Initialize Chain of Custody Manifest
-evidence_file = Path("evidence/suspicious_email.eml")
-manifest = ChainOfCustodyManager.create_manifest(
-    file_path=evidence_file,
+# 1. Initialize Master Case Aggregator
+aggregator = MasterCaseAggregator(
     case_id="CASE-2026-DFIR-001",
-    evidence_id="EVID-001",
-    examiner_name="Special Agent Smith",
-)
-ledger = ChainOfCustodyManager.create_ledger(manifest)
-
-# 2. Ingest Evidence (Zero Mutation Guarantee)
-ingester = EmailIngester()
-result = ingester.ingest_file(evidence_file)
-email = result.messages[0]
-
-# 3. Extract & Inspect Attachments
-extracted_atts = AttachmentExtractor.extract_from_email(
-    email, output_dir="output/attachments", save_to_disk=True
+    examiner_name="Special Agent J. Miller",
+    examiner_agency="Digital Forensics Unit",
+    case_title="Operation Phish-to-Egress Incident"
 )
 
-# 4. Multi-Vector Forensic Analysis
-auth_report = AuthenticationVerifier.verify_email(email)
-transit_route = RelayAnalyzer.reconstruct_route(email.header_decomposition.received_headers)
-net_service = NetworkIntelligenceService()
-email.transit_route = net_service.enrich_route(transit_route)
+# 2. Ingest Evidence across multiple forensic domains
+aggregator.add_evidence_file(Path("evidence/spearphish.eml"))
+aggregator.add_evidence_file(Path("evidence/dropped_payload.exe"))
+aggregator.add_evidence_file(Path("evidence/network_capture.pcap"))
+aggregator.add_evidence_file(Path("evidence/Security.evtx"))
 
-email.url_report = URLAnalyzer().extract_urls(email)
-email.bec_report = BECDetector().detect(email)
-email.obfuscation_report = ContentObfuscationDetector().detect(email)
-email.attachment_threat_report = AttachmentThreatScanner().scan_email(email)
-email.timeline_report = TimelineGenerator.generate_timeline(email)
+# 3. Correlate and Build Master Report
+master_report = aggregator.correlate_and_build_report()
 
-# 5. Calculate Composite Threat Score (0 - 100)
-risk_report = ThreatScorer.calculate_composite_risk(email)
-print(f"Risk Score: {risk_report.overall_score}/100 [{risk_report.risk_level.value}]")
-print(f"Recommended Action: {risk_report.recommended_action}")
+print(f"Overall Risk Score: {master_report.overall_composite_risk_score:.1f}/100")
+print(f"Correlated IoCs: {len(master_report.master_ioc_ledger)}")
+print(f"Total Timeline Events: {len(master_report.master_timeline)}")
 
-# 6. Export Multi-Format Evidence Reports
-exports = ForensicReportExporter.export_all(
-    email,
-    output_dir="output/reports",
-    case_id="CASE-2026-DFIR-001",
-    examiner_name="Special Agent Smith",
-)
-print("Reports generated:", exports)
+# 4. Export Court-Admissible Reports
+MasterCaseExporter.export_pdf(master_report, Path("exports/case_report.pdf"))
+MasterCaseExporter.export_stix(master_report, Path("exports/stix_bundle.json"))
+MasterCaseExporter.export_csv(master_report, Path("exports/iocs.csv"))
 ```
 
 ---
 
-## 🗺 Completed Phases & Epics
+## 🔒 Cryptographic Evidence Integrity
 
-All 5 core epics, 15 sub-tasks, and the forensic corpus benchmarking suite are 100% complete and validated:
+EFT strictly enforces the **ISO/IEC 27037** standard for digital evidence handling:
 
-| Epic / Phase | Key Capabilities | Status |
-| :--- | :--- | :---: |
-| **Phase 1: Ingestion & Core Parsing** | Ingest `.eml`, `.msg`, `.mbox`, MIME decomposition, attachment hashing & magic inspection | ✅ 100% |
-| **Phase 2: Header & Auth Analysis** | Relay hop reconstruction, MTA latency, GeoIP/ASN network intel, SPF/DKIM/DMARC/ARC | ✅ 100% |
-| **Phase 3: Threat & Content Forensics** | URL defanging, IDN homoglyphs, BEC executive impersonation, zero-width steganography, YARA scanner | ✅ 100% |
-| **Phase 4: Custody, Timelines & Reports** | Evidence ledger, UTC chronological timeline with anomaly detection, PDF/JSON/CSV/STIX 2.1 exporters | ✅ 100% |
-| **Phase 5: UI/UX & Visualization** | Dual-pane air-gapped inspector, SVG geodesic transit map, composite threat score card | ✅ 100% |
-| **Benchmark & Realistic Corpus** | 7 forensic scenarios (Benign, Phishing, BEC, Malware, Zero-Width, Transit Tor, MBOX) & latency benchmarks | ✅ 100% |
+1. **Pre-Analysis Hashing**: Before reading or analyzing any artifact, cryptographic hashes (`MD5`, `SHA-1`, `SHA-256`, `SHA-512`) are computed and recorded.
+2. **Read-Only Stream Analysis**: Evidence is inspected in memory or via read-only stream handles.
+3. **Post-Analysis Verification**: Hashes are re-computed upon analysis completion. Any discrepancy immediately raises an `EvidenceTamperedException` and halts the investigation pipeline.
+4. **Audit Immutability Ledger**: Every export includes the complete cryptographic chain of custody with timestamped examiner sign-offs.
 
 ---
 
-## 🔒 Evidence Integrity & Chain of Custody
-
-Digital forensic defensibility mandates that evidence remains unaltered:
-1. **Strict Read-Only Access:** Ingestion streams open source files with binary read-only access.
-2. **Dual-Phase Multi-Hashing:** MD5, SHA-1, and SHA-256 hashes are calculated upon initial intake and compared after analysis to guarantee `0-byte` mutation.
-3. **Audit Ledger:** Every analytical run produces an immutable `EvidenceLedger` recording case metadata, examiner identity, timestamps, and cryptographic proofs.
-
-For full technical specifications, see [docs/EVIDENCE_INTEGRITY.md](docs/EVIDENCE_INTEGRITY.md).
-
----
-
-## 💻 Installation & Setup
+## 📦 Installation & Setup
 
 ### Prerequisites
-* Python 3.10, 3.11, or 3.12
-* Poetry (>= 2.0.0) or pip
+* **Python**: `3.10`, `3.11`, or `3.12`
+* **Poetry**: `^2.0.0` or standard `pip`
 
-### Installation via Poetry
+### Installation via Poetry (Recommended)
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/iaditya8/Email-Forensic-Tool-EFT.git
-cd Email-Forensic-Tool-EFT
+cd "Email Forensic Tool (EFT)"
 
-# Install dependencies with Poetry
+# Install dependencies in virtual environment
 poetry install
 
-# Run the test suite with strict coverage verification
-poetry run pytest --cov=src/eft --cov-report=term-missing --cov-fail-under=80
+# Validate installation
+poetry run eft --help
 ```
 
-### Running Linters & Type Checks
+### Installation via Pip / Wheel
 ```bash
-poetry run ruff check .
-poetry run ruff format --check .
+pip install dist/eft-2.0.0-py3-none-any.whl
+```
+
+---
+
+## 🧪 Testing & Quality Gates
+
+EFT enforces strict automated quality gates:
+
+```bash
+# Run full unit and integration test suite
+poetry run pytest -v
+
+# Run test suite with strict coverage enforcement (>=80%)
+poetry run pytest --cov=eft --cov-report=term-missing --cov-fail-under=80
+
+# Run Ruff linter and code formatter checks
+poetry run ruff check src tests
+poetry run ruff format --check src tests
+
+# Run Mypy static type checker
 poetry run mypy src tests
 ```
 
 ---
 
-## 📄 License
+## 📄 License & Legal Notice
 
-This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+
+*Disclaimer: Email Forensic Tool (EFT) is designed for authorized digital forensic investigations, defensive incident response, and academic research. Always ensure proper legal authorization and chain-of-custody protocols before analyzing digital evidence.*
