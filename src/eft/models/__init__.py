@@ -16,6 +16,15 @@ from eft.models.canonical import (
     MIMEPartNode,
     SourceFileInfo,
 )
+from eft.models.credential_leak import (
+    CleartextProtocol,
+    CredentialLeakageReport,
+    DefangedSecret,
+    ExtractedCredentialRecord,
+    HighRiskProtocolExposure,
+    SecretType,
+    UnencryptedFileTransferRecord,
+)
 from eft.models.custody import (
     CustodyAction,
     CustodyEvent,
@@ -168,4 +177,11 @@ __all__ = [
     "DNSBeaconingAnalysis",
     "LargeTXTPayloadRecord",
     "DNSThreatReport",
+    "CleartextProtocol",
+    "SecretType",
+    "DefangedSecret",
+    "ExtractedCredentialRecord",
+    "UnencryptedFileTransferRecord",
+    "HighRiskProtocolExposure",
+    "CredentialLeakageReport",
 ]
