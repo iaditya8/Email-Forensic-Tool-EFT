@@ -362,7 +362,10 @@
         <div class="card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
             <h3 style="font-size: 1.05rem; color: var(--accent-cyan);" id="file-res-title">File Artifact Summary</h3>
-            <button class="btn btn-secondary" onclick="exportFileJSON()">&#123; &#125; Export JSON</button>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary" onclick="exportFileJSON()">&#123; &#125; Download JSON</button>
+              <button class="btn btn-secondary" onclick="exportFileCSV()">&#128202; Download CSV</button>
+            </div>
           </div>
           <div class="summary-details">
             <div class="stat-box">
@@ -1525,18 +1528,124 @@
       // Metadata content
       const metaDiv = document.getElementById('file-metadata-content');
       if (metaDiv) {
-        const metaEntries = Object.entries(metaRep.metadata || metaRep.exif || {});
-        if (metaEntries.length > 0) {
-          metaDiv.innerHTML = `<div class="table-container"><table><thead><tr><th>Property</th><th>Extracted Value</th></tr></thead><tbody>` +
-            metaEntries.map(([k, v]) => `<tr><td><strong>${escapeHtml(k)}</strong></td><td><code>${escapeHtml(JSON.stringify(v))}</code></td></tr>`).join('') +
-            `</tbody></table></div>`;
-        } else {
-          metaDiv.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding: 1.5rem;">No EXIF / OLE document metadata found.</p>`;
-        }
+        metaDiv.innerHTML = renderFileMetadataContent(metaRep, staticRep, artRep);
       }
 
       // Raw json
       document.getElementById('file-raw-json').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function renderFileMetadataContent(metaRep, staticRep, artRep) {
+      if (!metaRep || (typeof metaRep !== 'object')) {
+        return `<p style="color:var(--text-muted); text-align:center; padding: 1.5rem;">No document or EXIF metadata found.</p>`;
+      }
+
+      let html = "";
+      let hasData = false;
+
+      // 1. Metadata Anomalies & Risk
+      if (metaRep.anomalies && metaRep.anomalies.length > 0) {
+        hasData = true;
+        html += `<h4 style="font-size: 0.85rem; color: var(--risk-high); margin-bottom: 0.5rem;">🚨 Forensic Metadata Anomalies</h4>`;
+        html += `<div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem;">`;
+        metaRep.anomalies.forEach(a => {
+          html += `<div class="alert-box"><strong>${escapeHtml(a.anomaly_type || 'Anomaly')}:</strong> ${escapeHtml(a.description || '')} (${escapeHtml(a.severity || 'HIGH')})</div>`;
+        });
+        html += `</div>`;
+      }
+
+      // 2. Image EXIF & Camera Metadata
+      const exif = metaRep.exif;
+      if (exif && Object.keys(exif).length > 0) {
+        hasData = true;
+        html += `
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📷 Image EXIF & Device Forensics</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="stat-box"><div class="title">Camera Device</div><div class="value">${escapeHtml((exif.camera_make || '') + ' ' + (exif.camera_model || '')).trim() || 'N/A'}</div></div>
+            <div class="stat-box"><div class="title">Lens & Software</div><div class="value">${escapeHtml(exif.lens_model || exif.software || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Dimensions</div><div class="value">${exif.image_width ? exif.image_width + ' × ' + exif.image_height + ' px' : 'N/A'}</div></div>
+            <div class="stat-box"><div class="title">Capture Timestamp</div><div class="value">${escapeHtml(exif.datetime_original || exif.datetime_digitized || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">ISO / Shutter</div><div class="value">${exif.iso_speed ? 'ISO ' + exif.iso_speed : ''} ${exif.exposure_time ? '| ' + exif.exposure_time : 'N/A'}</div></div>
+            <div class="stat-box"><div class="title">GPS Geolocation</div><div class="value">${exif.gps && exif.gps.google_maps_url ? '<a href="' + escapeHtml(exif.gps.google_maps_url) + '" target="_blank" style="color:var(--accent-cyan); text-decoration:underline; font-weight:700;">📍 ' + exif.gps.latitude.toFixed(5) + ', ' + exif.gps.longitude.toFixed(5) + ' (Google Maps)</a>' : (exif.gps ? exif.gps.latitude.toFixed(5) + ', ' + exif.gps.longitude.toFixed(5) : 'No GPS Tags')}</div></div>
+          </div>
+        `;
+        if (exif.raw_tags && Object.keys(exif.raw_tags).length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Raw Parsed EXIF Tags</h4>
+            <div class="table-container" style="max-height: 280px; overflow-y: auto;"><table><thead><tr><th>Tag</th><th>Value</th></tr></thead><tbody>
+          `;
+          Object.entries(exif.raw_tags).forEach(([k, v]) => {
+            html += `<tr><td><strong>${escapeHtml(k)}</strong></td><td><code>${escapeHtml(typeof v === 'object' ? JSON.stringify(v) : String(v))}</code></td></tr>`;
+          });
+          html += `</tbody></table></div><br>`;
+        }
+      }
+
+      // 3. Office Document Metadata
+      const doc = metaRep.document;
+      if (doc && Object.keys(doc).length > 0) {
+        hasData = true;
+        html += `
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📄 Office Document Metadata</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="stat-box"><div class="title">Title / Subject</div><div class="value">${escapeHtml(doc.title || doc.subject || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Author / Creator</div><div class="value">${escapeHtml(doc.creator || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Last Modified By</div><div class="value">${escapeHtml(doc.last_modified_by || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Created Timestamp</div><div class="value">${escapeHtml(doc.created || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Modified Timestamp</div><div class="value">${escapeHtml(doc.modified || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Application & Revision</div><div class="value">${escapeHtml(doc.application || 'N/A')} ${doc.revision ? '(Rev ' + doc.revision + ')' : ''}</div></div>
+            <div class="stat-box"><div class="title">Word & Page Count</div><div class="value">${doc.word_count ? doc.word_count.toLocaleString() + ' words' : '-'} | ${doc.page_count ? doc.page_count + ' pages' : '-'}</div></div>
+            <div class="stat-box"><div class="title">Company</div><div class="value">${escapeHtml(doc.company || 'N/A')}</div></div>
+          </div>
+        `;
+      }
+
+      // 4. PDF Structure & Threat Indicators
+      const pdf = metaRep.pdf;
+      if (pdf && Object.keys(pdf).length > 0) {
+        hasData = true;
+        html += `
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">📑 PDF Catalog Structure & Indicators</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="stat-box"><div class="title">Title / Author</div><div class="value">${escapeHtml(pdf.title || pdf.author || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Producer / Creator</div><div class="value">${escapeHtml(pdf.producer || pdf.creator || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Creation & Mod Date</div><div class="value">${escapeHtml(pdf.creation_date || 'N/A')}<br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(pdf.mod_date || '')}</span></div></div>
+            <div class="stat-box"><div class="title">PDF Version & Pages</div><div class="value">v${escapeHtml(pdf.pdf_version || '1.7')} | ${pdf.page_count ? pdf.page_count + ' pages' : '-'}</div></div>
+            <div class="stat-box"><div class="title">Embedded JavaScript</div><div class="value">${pdf.has_javascript ? '<span class="auth-badge auth-fail">YES (/JavaScript)</span>' : '<span style="color:var(--text-muted)">No</span>'}</div></div>
+            <div class="stat-box"><div class="title">Launch Execution Action</div><div class="value">${pdf.has_launch_action ? '<span class="auth-badge auth-fail">YES (/Launch)</span>' : '<span style="color:var(--text-muted)">No</span>'}</div></div>
+            <div class="stat-box"><div class="title">Embedded Files</div><div class="value">${pdf.has_embedded_files ? '<span class="auth-badge auth-fail">YES (/EmbeddedFiles)</span>' : '<span style="color:var(--text-muted)">No</span>'}</div></div>
+            <div class="stat-box"><div class="title">OpenAction Auto-Trigger</div><div class="value">${pdf.has_open_action ? '<span class="auth-badge auth-fail">YES (/OpenAction)</span>' : '<span style="color:var(--text-muted)">No</span>'}</div></div>
+          </div>
+        `;
+        if (pdf.suspicious_elements && pdf.suspicious_elements.length > 0) {
+          html += `
+            <div class="alert-box" style="margin-bottom: 1rem;">
+              <strong>Suspicious PDF Elements Detected:</strong> ${escapeHtml(pdf.suspicious_elements.join(', '))}
+            </div>
+          `;
+        }
+      }
+
+      // 5. Multimedia Tags
+      const media = metaRep.multimedia;
+      if (media && Object.keys(media).length > 0) {
+        hasData = true;
+        html += `
+          <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">🎵 Multimedia Container Metadata</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="stat-box"><div class="title">Track Title</div><div class="value">${escapeHtml(media.title || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Artist / Album</div><div class="value">${escapeHtml(media.artist || '')} ${media.album ? '— ' + escapeHtml(media.album) : ''}</div></div>
+            <div class="stat-box"><div class="title">Duration & Bitrate</div><div class="value">${media.duration_seconds ? media.duration_seconds.toFixed(1) + 's' : '-'} | ${media.bitrate_kbps ? media.bitrate_kbps + ' kbps' : '-'}</div></div>
+            <div class="stat-box"><div class="title">Encoder / Tool</div><div class="value">${escapeHtml(media.encoder || 'N/A')}</div></div>
+          </div>
+        `;
+      }
+
+      if (!hasData) {
+        html = `<p style="color:var(--text-muted); text-align:center; padding: 1.5rem;">No EXIF, Document properties, or embedded metadata streams discovered in this artifact.</p>`;
+      }
+
+      return html;
     }
 
     function switchFileTab(tabId) {
@@ -1555,7 +1664,35 @@
       const a = document.createElement('a');
       a.href = window.URL.createObjectURL(blob);
       a.download = `file_report_${currentFileReport.filename || 'evidence'}_${Date.now()}.json`;
+      document.body.appendChild(a);
       a.click();
+      a.remove();
+    }
+
+    function exportFileCSV() {
+      if (!currentFileReport) return;
+      const r = currentFileReport;
+      const rows = [
+        ["Property", "Value"],
+        ["Filename", r.filename || ""],
+        ["Size Bytes", r.size_bytes || 0],
+        ["SHA-256", r.hashes ? r.hashes.sha256 || "" : ""],
+        ["MD5", r.hashes ? r.hashes.md5 || "" : ""],
+        ["SHA-1", r.hashes ? r.hashes.sha1 || "" : ""],
+        ["SHA-512", r.hashes ? r.hashes.sha512 || "" : ""],
+        ["MIME Type", (r.artifact_report && r.artifact_report.mime_type) || ""],
+        ["Magic Description", (r.artifact_report && r.artifact_report.file_magic) || ""],
+        ["Entropy", (r.static_report && r.static_report.entropy) || 0],
+        ["Architecture", (r.static_report && r.static_report.architecture) || ""],
+      ];
+      const csvContent = "data:text/csv;charset=utf-8," + rows.map(e => e.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const encodedUri = encodeURI(csvContent);
+      const a = document.createElement("a");
+      a.href = encodedUri;
+      a.download = `file_report_${r.filename || 'evidence'}_${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
     }
 
     // -------------------------------------------------------------------------
