@@ -247,9 +247,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build a specialized DNS threat inspection engine that evaluates query length, subdomain entropy, high-frequency query intervals, and TXT record payload sizes.
   * *Why:* Threat actors use DNS tunneling (e.g. `iodine`, `dnscat2`) to smuggle data through restricted corporate firewalls.
 * **Done when:**
-  - [ ] High-entropy subdomains (>4.5 Shannon entropy) flagged as potential DNS exfiltration.
-  - [ ] Excessive query volumes to single root domains flagged for DNS C2 tunneling.
-  - [ ] Fast-flux domain switching (rapidly changing A records with low TTLs) detected.
+  - [x] High-entropy subdomains (>4.5 Shannon entropy) flagged as potential DNS exfiltration.
+  - [x] Excessive query volumes to single root domains flagged for DNS C2 tunneling.
+  - [x] Fast-flux domain switching (rapidly changing A records with low TTLs) detected.
 
 ### Task 8.3: Cleartext Credential & High-Risk Protocol Extraction
 * **What needs to be built, and why:**
