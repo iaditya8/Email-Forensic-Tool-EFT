@@ -9,10 +9,12 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
 from fastapi.responses import HTMLResponse
+from pydantic import BaseModel, Field
 
 from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
+from eft.analysis.domain_osint import DomainOSINTAnalyzer
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
@@ -23,6 +25,7 @@ from eft.ingestion.attachment_extractor import AttachmentExtractor
 from eft.ingestion.engine import EmailIngester
 from eft.ingestion.header_decomposer import HeaderDecomposer
 from eft.models.canonical import CanonicalEmail
+from eft.models.osint import DomainOSINTReport
 from eft.reporting.custody import ChainOfCustodyManager
 from eft.reporting.exporter import ForensicReportExporter
 from eft.reporting.timeline import TimelineGenerator
@@ -284,3 +287,36 @@ def verify_evidence_endpoint(payload: Dict[str, Any]) -> Dict[str, Any]:
         "expected_sha256": expected_sha,
         "status": "IMMUTABILITY VERIFIED" if match else "TAMPERING DETECTED",
     }
+
+
+class OSINTLookupRequest(BaseModel):
+    """Payload for domain or email address OSINT lookup."""
+
+    target: str = Field(..., description="Target email address, domain name, or URL to inspect")
+    dns_timeout: float = Field(3.0, description="DNS network resolution timeout in seconds")
+    offline: bool = Field(False, description="Run in air-gapped offline simulation mode")
+
+
+@router.post("/api/osint/lookup")
+def lookup_osint_endpoint(request: OSINTLookupRequest) -> Dict[str, Any]:
+    """Inspect domain or email address authentication posture, brand risk, and reputation."""
+    target_clean = request.target.strip()
+    if not target_clean:
+        raise HTTPException(
+            status_code=400,
+            detail="Target email address or domain name is required.",
+        )
+
+    try:
+        analyzer = DomainOSINTAnalyzer()
+        report: DomainOSINTReport = analyzer.analyze(
+            target=target_clean,
+            dns_timeout=request.dns_timeout,
+            offline=request.offline,
+        )
+        return {
+            "success": True,
+            "report": report.model_dump(mode="json"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OSINT analysis failed: {str(e)}")

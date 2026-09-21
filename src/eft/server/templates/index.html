@@ -105,6 +105,23 @@
     
     .alert-box { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.85rem; border-left: 4px solid var(--risk-critical); background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
     
+    .module-nav { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .module-btn { background: #1e293b; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
+    .module-btn:hover { color: var(--text-primary); border-color: var(--accent-cyan); }
+    .module-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(59, 130, 246, 0.15)); border-color: var(--accent-cyan); color: #fff; box-shadow: 0 0 16px rgba(6, 182, 212, 0.2); }
+    
+    .osint-preset-badge { padding: 0.3rem 0.6rem; background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+    .osint-preset-badge:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); }
+    
+    .osint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; margin-top: 1rem; }
+    .osint-card { background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; }
+    .osint-card-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
+    
+    .osint-tag { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; text-transform: uppercase; }
+    .osint-tag-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .osint-tag-warn { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
+    .osint-tag-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+
     footer { border-top: 1px solid var(--border-color); padding: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-secondary); }
   </style>
 </head>
@@ -114,7 +131,7 @@
       <div class="brand-icon">E</div>
       <div>
         <div class="brand-title">Email Forensic Tool (EFT)</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted);">Enterprise DFIR & Authentication Analysis Suite v1.0.0</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted);">Enterprise DFIR & Authentication Analysis Suite v1.1.0</div>
       </div>
     </div>
     <div class="header-badges">
@@ -124,9 +141,17 @@
   </header>
 
   <main>
-    <!-- Ingestion Hero -->
-    <section class="card">
-      <h2 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary);">Acquire & Ingest Digital Evidence</h2>
+    <!-- Top Module Navigation Switcher -->
+    <div class="module-nav">
+      <button class="module-btn active" id="btn-mode-email" onclick="switchMainMode('email')">&#128190; Email Evidence Deep Triage</button>
+      <button class="module-btn" id="btn-mode-osint" onclick="switchMainMode('osint')">&#127760; Domain & Email OSINT Inspector</button>
+    </div>
+
+    <!-- Mode 1: Email Evidence Ingestion -->
+    <div id="email-mode-container">
+      <!-- Ingestion Hero -->
+      <section class="card">
+        <h2 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary);">Acquire & Ingest Digital Evidence</h2>
       <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
         <input type="file" id="file-input" style="display: none;" accept=".eml,.msg,.mbox">
         <div class="dropzone-icon">&#128190;</div>
@@ -221,6 +246,7 @@
           <button class="tab-btn" onclick="switchTab('attachments')">Attachments & YARA</button>
           <button class="tab-btn" onclick="switchTab('bec')">BEC & Impersonation</button>
           <button class="tab-btn" onclick="switchTab('timeline')">Evidence Timeline</button>
+          <button class="tab-btn" onclick="switchTab('osint')">Domain OSINT</button>
           <button class="tab-btn" onclick="switchTab('raw')">Raw Headers & Inspector</button>
         </div>
 
@@ -320,6 +346,13 @@
           </div>
         </div>
 
+        <!-- Domain OSINT Tab (for Ingested Email) -->
+        <div class="tab-content" id="tab-osint">
+          <div id="email-sender-osint-container">
+            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading Sender Domain OSINT Intelligence...</div>
+          </div>
+        </div>
+
         <!-- Raw Tab -->
         <div class="tab-content" id="tab-raw">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
@@ -335,6 +368,166 @@
         </div>
       </div>
     </section>
+  </div>
+
+  <!-- Mode 2: Quick OSINT & Domain Inspector -->
+  <div id="osint-mode-container" style="display: none; flex-direction: column; gap: 1.5rem;">
+    <section class="card">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+        <div>
+          <h2 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.25rem;">Domain & Email Address OSINT Inspector</h2>
+          <p style="font-size: 0.8rem; color: var(--text-secondary);">Perform instantaneous pre-triage intelligence queries for SPF/DMARC posture, DKIM selector discovery, BIMI records, homoglyph typosquatting, and domain reputation.</p>
+        </div>
+        <span class="badge badge-airgap">Standalone / Air-Gapped</span>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+        <input type="text" id="osint-target-input" placeholder="Enter target email (e.g. user@target.com) or domain (e.g. micros0ft.com)..." style="flex: 1; background: #1e293b; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; outline: none;" onkeydown="if(event.key==='Enter') executeOSINTLookup()">
+        <button class="btn" id="osint-submit-btn" onclick="executeOSINTLookup()" style="padding: 0.75rem 1.5rem;">&#128269; Inspect Target</button>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <span style="font-size: 0.75rem; color: var(--text-muted);">Quick Presets:</span>
+          <span class="osint-preset-badge" onclick="setOSINTPreset('micros0ft.com')">micros0ft.com (Homoglyph)</span>
+          <span class="osint-preset-badge" onclick="setOSINTPreset('billing-paypal.com')">billing-paypal.com (Lookalike)</span>
+          <span class="osint-preset-badge" onclick="setOSINTPreset('support@mailinator.com')">mailinator.com (Disposable)</span>
+          <span class="osint-preset-badge" onclick="setOSINTPreset('admin@google.com')">google.com (Strict SPF/DMARC)</span>
+          <span class="osint-preset-badge" onclick="setOSINTPreset('contact@bad-config.org')">bad-config.org (+all Permissive)</span>
+        </div>
+
+        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
+          <input type="checkbox" id="osint-offline-toggle" checked style="accent-color: var(--accent-cyan);">
+          <span>Offline Air-Gapped Simulation</span>
+        </label>
+      </div>
+    </section>
+
+    <!-- OSINT Loading State -->
+    <div id="osint-loading-state" style="display: none; text-align: center; padding: 2.5rem;" class="card">
+      <div style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">&#9881; Resolving DNS Posture & Threat Feeds...</div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">Querying MX, SPF, DMARC, DKIM selectors, and matching homoglyph watchlist</div>
+    </div>
+
+    <!-- OSINT Results Container -->
+    <div id="osint-results-container" style="display: none; flex-direction: column; gap: 1.5rem;">
+      <!-- Hero Overview -->
+      <div class="triage-grid">
+        <div class="risk-card">
+          <div class="score-circle" id="osint-score-circle">
+            <div class="score-number" id="osint-score-val">0</div>
+            <div class="score-max">/ 100</div>
+          </div>
+          <div class="threat-tag" id="osint-risk-tag">CLEAN</div>
+          <div style="font-size: 0.8rem; color: var(--accent-cyan); margin-top: 0.5rem; font-weight: 600;" id="osint-category-pill">Corporate</div>
+        </div>
+
+        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">Target Profile & Identity Resolution</h3>
+            <div class="summary-details">
+              <div class="stat-box">
+                <div class="title">Target Input</div>
+                <div class="value" id="osint-res-target" style="font-size: 0.95rem;">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="title">Analyzed Domain / FQDN</div>
+                <div class="value" id="osint-res-domain" style="font-size: 0.95rem;">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="title">Registered Domain</div>
+                <div class="value" id="osint-res-regdomain" style="font-size: 0.95rem;">-</div>
+              </div>
+              <div class="stat-box">
+                <div class="title">IDN / Punycode</div>
+                <div class="value" id="osint-res-punycode" style="font-size: 0.95rem;">-</div>
+              </div>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.4;" id="osint-res-summary"></p>
+          </div>
+
+          <div class="action-bar" style="margin-top: 1rem;">
+            <button class="btn btn-secondary" onclick="exportOSINTJSON()">&#123; &#125; Download OSINT JSON</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Brand Alert (Hidden unless alert detected) -->
+      <div id="osint-brand-alert-box" style="display: none;" class="alert-box"></div>
+
+      <!-- DNS & Authentication Cards -->
+      <div class="osint-grid">
+        <!-- MX & Routing -->
+        <div class="osint-card">
+          <div class="osint-card-title">
+            <span>&#128233; MX Mail Exchangers</span>
+            <span id="osint-badge-mx" class="osint-tag osint-tag-pass">CONFIGURED</span>
+          </div>
+          <div id="osint-mx-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
+        </div>
+
+        <!-- SPF Posture -->
+        <div class="osint-card">
+          <div class="osint-card-title">
+            <span>&#128737; SPF Policy Posture</span>
+            <span id="osint-badge-spf" class="osint-tag osint-tag-pass">STRICT</span>
+          </div>
+          <div id="osint-spf-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
+        </div>
+
+        <!-- DMARC Posture -->
+        <div class="osint-card">
+          <div class="osint-card-title">
+            <span>&#128272; DMARC Enforcement</span>
+            <span id="osint-badge-dmarc" class="osint-tag osint-tag-pass">REJECT</span>
+          </div>
+          <div id="osint-dmarc-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
+        </div>
+
+        <!-- DKIM & BIMI -->
+        <div class="osint-card">
+          <div class="osint-card-title">
+            <span>&#128273; DKIM Selectors & BIMI</span>
+            <span id="osint-badge-dkim" class="osint-tag osint-tag-pass">PROBED</span>
+          </div>
+          <div id="osint-dkim-bimi-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
+        </div>
+      </div>
+
+      <!-- Threat Factors & Remediation Section -->
+      <div class="card">
+        <div class="tabs-nav">
+          <button class="tab-btn active" id="btn-osint-tab-factors" onclick="switchOSINTDetailTab('factors')">Contributing Risk Factors</button>
+          <button class="tab-btn" id="btn-osint-tab-remediation" onclick="switchOSINTDetailTab('remediation')">Forensic Hardening Advice</button>
+          <button class="tab-btn" id="btn-osint-tab-raw" onclick="switchOSINTDetailTab('raw')">Raw JSON Report</button>
+        </div>
+
+        <div class="tab-content active" id="tab-osint-factors">
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Threat Factor</th>
+                  <th>Score Contribution</th>
+                  <th>Description</th>
+                </tr>
+              </thead>
+              <tbody id="osint-factors-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tab-content" id="tab-osint-remediation">
+          <div id="osint-remediation-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+        </div>
+
+        <div class="tab-content" id="tab-osint-raw">
+          <div class="raw-viewer" id="osint-raw-json-viewer"></div>
+        </div>
+      </div>
+    </div>
+  </div>
   </main>
 
   <footer>
@@ -529,6 +722,7 @@
       renderAttachmentsTab(email.attachment_threat_report, email.extracted_attachments || email.attachments);
       renderBECTab(email.bec_report);
       renderTimelineTab(email.timeline_report);
+      renderEmailSenderOSINT(email.from_address || email.sender || email.from);
       renderRawTab(email);
     }
 
@@ -795,6 +989,379 @@
       }
     }
 
+    function escapeHtml(str) {
+      if (!str) return "";
+      const div = document.createElement('div');
+      div.innerText = str;
+      return div.innerHTML;
+    }
+
+    // Module Switcher Mode Logic
+    function switchMainMode(mode) {
+      const emailBtn = document.getElementById('btn-mode-email');
+      const osintBtn = document.getElementById('btn-mode-osint');
+      const emailContainer = document.getElementById('email-mode-container');
+      const osintContainer = document.getElementById('osint-mode-container');
+
+      if (mode === 'osint') {
+        emailBtn.classList.remove('active');
+        osintBtn.classList.add('active');
+        emailContainer.style.display = 'none';
+        osintContainer.style.display = 'flex';
+        try { localStorage.setItem('eft_main_mode', 'osint'); } catch (e) {}
+      } else {
+        osintBtn.classList.remove('active');
+        emailBtn.classList.add('active');
+        osintContainer.style.display = 'none';
+        emailContainer.style.display = 'block';
+        try { localStorage.setItem('eft_main_mode', 'email'); } catch (e) {}
+      }
+    }
+
+    function setOSINTPreset(preset) {
+      const targetInput = document.getElementById('osint-target-input');
+      if (targetInput) {
+        targetInput.value = preset;
+        executeOSINTLookup();
+      }
+    }
+
+    let currentOSINTReport = null;
+
+    async function executeOSINTLookup() {
+      const targetInput = document.getElementById('osint-target-input');
+      const target = targetInput ? targetInput.value.trim() : "";
+      if (!target) {
+        alert("Please enter a domain or email address to inspect.");
+        return;
+      }
+
+      const offlineToggle = document.getElementById('osint-offline-toggle');
+      const offline = offlineToggle ? offlineToggle.checked : true;
+
+      const loadingState = document.getElementById('osint-loading-state');
+      const resultsContainer = document.getElementById('osint-results-container');
+      const submitBtn = document.getElementById('osint-submit-btn');
+
+      loadingState.style.display = 'block';
+      resultsContainer.style.display = 'none';
+      submitBtn.disabled = true;
+
+      try {
+        const res = await fetch('/api/osint/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: target, offline: offline, dns_timeout: 3.0 })
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.detail || "OSINT query failed");
+        }
+        const data = await res.json();
+        currentOSINTReport = data.report;
+        renderOSINTResults(currentOSINTReport);
+        try {
+          localStorage.setItem('eft_last_osint_target', target);
+          localStorage.setItem('eft_last_osint_report', JSON.stringify(currentOSINTReport));
+        } catch (e) {}
+      } catch (err) {
+        alert("OSINT Inspector Error: " + err.message);
+      } finally {
+        loadingState.style.display = 'none';
+        submitBtn.disabled = false;
+      }
+    }
+
+    function renderOSINTResults(report) {
+      if (!report) return;
+      const resultsContainer = document.getElementById('osint-results-container');
+      resultsContainer.style.display = 'flex';
+
+      // Score dial & risk tier
+      const score = report.reputation_score || 0;
+      document.getElementById('osint-score-val').innerText = score.toFixed(1);
+      
+      const scoreCircle = document.getElementById('osint-score-circle');
+      const riskTag = document.getElementById('osint-risk-tag');
+      
+      let scoreColor = "var(--risk-benign)";
+      let tagText = "CLEAN";
+      if (score >= 75) {
+        scoreColor = "var(--risk-critical)";
+        tagText = "CRITICAL";
+      } else if (score >= 50) {
+        scoreColor = "var(--risk-high)";
+        tagText = "HIGH RISK";
+      } else if (score >= 25) {
+        scoreColor = "var(--risk-medium)";
+        tagText = "SUSPICIOUS";
+      } else if (score >= 10) {
+        scoreColor = "var(--risk-low)";
+        tagText = "LOW RISK";
+      }
+      
+      scoreCircle.style.borderColor = scoreColor;
+      riskTag.innerText = tagText;
+      riskTag.style.color = scoreColor;
+
+      document.getElementById('osint-category-pill').innerText = report.category || "Corporate / Enterprise";
+
+      // Profile Identity
+      document.getElementById('osint-res-target').innerText = report.input_target || "-";
+      document.getElementById('osint-res-domain').innerText = report.analyzed_domain || "-";
+      document.getElementById('osint-res-regdomain').innerText = `${report.registered_domain || '-'} (TLD: .${report.tld || '-'})`;
+      
+      let punycodeStr = "No";
+      if (report.is_punycode) {
+        punycodeStr = `YES (${report.unicode_domain || 'IDN'})`;
+      }
+      document.getElementById('osint-res-punycode').innerHTML = report.is_punycode ? `<span style="color:var(--risk-high)">${escapeHtml(punycodeStr)}</span>` : punycodeStr;
+      
+      document.getElementById('osint-res-summary').innerText = report.summary || "";
+
+      // Brand Alert Panel
+      const brandAlert = document.getElementById('osint-brand-alert-box');
+      if (report.brand_risk && (report.brand_risk.has_homoglyphs || report.brand_risk.is_cousin_domain || report.brand_risk.similarity_score >= 0.75)) {
+        const br = report.brand_risk;
+        const hgStr = br.has_homoglyphs ? ` | Detected Homoglyphs: <code>${br.homoglyphs_detected.join(', ')}</code>` : '';
+        brandAlert.style.display = 'block';
+        brandAlert.innerHTML = `
+          <strong>[!] BRAND IMPERSONATION & TYPOSQUATTING ALERT:</strong> Target domain <code>${escapeHtml(report.analyzed_domain)}</code> mimics protected brand <strong>${escapeHtml(br.matched_brand_domain)}</strong> (Similarity: ${(br.similarity_score * 100).toFixed(1)}%, Levenshtein Distance: ${br.levenshtein_distance}${hgStr}).
+        `;
+      } else {
+        brandAlert.style.display = 'none';
+      }
+
+      // DNS Posture
+      const dns = report.dns_posture || {};
+
+      // 1. MX
+      const mxBadge = document.getElementById('osint-badge-mx');
+      const mxContent = document.getElementById('osint-mx-content');
+      if (dns.has_mx && dns.mx_records && dns.mx_records.length > 0) {
+        mxBadge.className = "osint-tag osint-tag-pass";
+        mxBadge.innerText = `${dns.mx_records.length} CONFIGURED`;
+        const mxList = dns.mx_records.map(m => `<div><code>${escapeHtml(m.host || m)}</code> <span style="font-size:0.75rem; color:var(--text-muted);">(Priority ${m.preference || 10})</span></div>`).join('');
+        mxContent.innerHTML = mxList;
+      } else {
+        mxBadge.className = "osint-tag osint-tag-fail";
+        mxBadge.innerText = "MISSING";
+        mxContent.innerHTML = "<span style='color:var(--risk-critical);'>No MX records published. Domain cannot receive standard inbound email.</span>";
+      }
+
+      // 2. SPF
+      const spfBadge = document.getElementById('osint-badge-spf');
+      const spfContent = document.getElementById('osint-spf-content');
+      const spf = dns.spf || {};
+      if (spf.raw_record || spf.qualifier !== 'missing') {
+        const isStrict = spf.strictness === 'STRICT' || spf.strictness === 'SOFTFAIL';
+        spfBadge.className = isStrict ? "osint-tag osint-tag-pass" : "osint-tag osint-tag-warn";
+        spfBadge.innerText = spf.strictness || "CONFIGURED";
+        spfContent.innerHTML = `
+          <div><strong>Qualifier:</strong> <code>${escapeHtml(spf.qualifier || 'none')}</code></div>
+          <div style="margin-top:0.35rem;"><code>${escapeHtml(spf.raw_record || '')}</code></div>
+          ${spf.warnings && spf.warnings.length > 0 ? '<div style="color:var(--risk-medium); margin-top:0.35rem; font-size:0.75rem;">' + spf.warnings.map(w => escapeHtml(w)).join('; ') + '</div>' : ''}
+        `;
+      } else {
+        spfBadge.className = "osint-tag osint-tag-fail";
+        spfBadge.innerText = "MISSING";
+        spfContent.innerHTML = "<span style='color:var(--risk-critical);'>No SPF record found in DNS TXT. Senders can easily forge this domain.</span>";
+      }
+
+      // 3. DMARC
+      const dmarcBadge = document.getElementById('osint-badge-dmarc');
+      const dmarcContent = document.getElementById('osint-dmarc-content');
+      const dmarc = dns.dmarc || {};
+      if (dmarc.raw_record || dmarc.policy !== 'missing') {
+        const isEnforcing = dmarc.enforcement === 'REJECT' || dmarc.enforcement === 'QUARANTINE';
+        dmarcBadge.className = isEnforcing ? "osint-tag osint-tag-pass" : (dmarc.enforcement === 'NONE' ? "osint-tag osint-tag-warn" : "osint-tag osint-tag-fail");
+        dmarcBadge.innerText = dmarc.enforcement || "CONFIGURED";
+        dmarcContent.innerHTML = `
+          <div><strong>Policy:</strong> <code>p=${escapeHtml(dmarc.policy || 'none')}</code> (pct: ${dmarc.percentage || 100}%)</div>
+          <div style="margin-top:0.35rem;"><code>${escapeHtml(dmarc.raw_record || '')}</code></div>
+          ${dmarc.rua_uris && dmarc.rua_uris.length > 0 ? '<div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">RUA: ' + escapeHtml(dmarc.rua_uris.join(', ')) + '</div>' : ''}
+        `;
+      } else {
+        dmarcBadge.className = "osint-tag osint-tag-fail";
+        dmarcBadge.innerText = "MISSING";
+        dmarcContent.innerHTML = "<span style='color:var(--risk-critical);'>No DMARC policy found. Vulnerable to direct address spoofing.</span>";
+      }
+
+      // 4. DKIM & BIMI
+      const dkimBadge = document.getElementById('osint-badge-dkim');
+      const dkimContent = document.getElementById('osint-dkim-bimi-content');
+      const dkimList = dns.discovered_dkim || [];
+      const bimi = dns.bimi || {};
+      
+      if (dkimList.length > 0) {
+        dkimBadge.className = "osint-tag osint-tag-pass";
+        dkimBadge.innerText = `${dkimList.length} DISCOVERED`;
+      } else {
+        dkimBadge.className = "osint-tag osint-tag-warn";
+        dkimBadge.innerText = "0 DISCOVERED";
+      }
+
+      let dkimHtml = dkimList.length > 0 
+        ? dkimList.map(d => `<div><code>${escapeHtml(d.selector)}</code> <span style="font-size:0.75rem; color:var(--text-muted);">(${escapeHtml(d.key_type)})</span></div>`).join('')
+        : "<div style='color:var(--text-muted);'>No standard selector records found.</div>";
+
+      let bimiHtml = bimi.logo_url || bimi.raw_record
+        ? `<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border-color);"><strong>BIMI Logo:</strong> <code>${escapeHtml(bimi.logo_url || 'Configured')}</code></div>`
+        : `<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border-color); color:var(--text-muted); font-size:0.75rem;">BIMI not published.</div>`;
+
+      dkimContent.innerHTML = dkimHtml + bimiHtml;
+
+      // Factors Table
+      const factorsTbody = document.getElementById('osint-factors-tbody');
+      factorsTbody.innerHTML = "";
+      const factors = report.risk_factors || [];
+      if (factors.length === 0) {
+        factorsTbody.innerHTML = "<tr><td colspan='4' style='color:var(--accent-emerald);'>Zero threat factors detected. Clean domain posture.</td></tr>";
+      } else {
+        factors.forEach(f => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="auth-badge ${f.severity === 'HIGH' || f.severity === 'CRITICAL' ? 'auth-fail' : 'auth-none'}">${escapeHtml(f.severity || 'INFO')}</span></td>
+            <td><strong>${escapeHtml(f.name || '')}</strong></td>
+            <td>+${(f.score_contribution || 0).toFixed(1)} pts</td>
+            <td>${escapeHtml(f.description || '')}</td>
+          `;
+          factorsTbody.appendChild(tr);
+        });
+      }
+
+      // Remediation Checklist
+      const remList = document.getElementById('osint-remediation-list');
+      remList.innerHTML = "";
+      const adviceItems = report.remediation_advice || [];
+      if (adviceItems.length === 0) {
+        remList.innerHTML = "<p style='color:var(--accent-emerald);'>Domain adheres to strict security baseline. Maintain regular DKIM key rotation.</p>";
+      } else {
+        adviceItems.forEach(item => {
+          const div = document.createElement('div');
+          div.style.padding = '0.5rem 0.75rem';
+          div.style.background = 'rgba(30, 41, 59, 0.6)';
+          div.style.borderRadius = '6px';
+          div.style.borderLeft = '3px solid var(--accent-cyan)';
+          div.style.fontSize = '0.85rem';
+          div.innerHTML = escapeHtml(item);
+          remList.appendChild(div);
+        });
+      }
+
+      // Raw JSON
+      document.getElementById('osint-raw-json-viewer').innerText = JSON.stringify(report, null, 2);
+    }
+
+    function switchOSINTDetailTab(tabId) {
+      document.querySelectorAll('#osint-results-container .tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('#osint-results-container .tab-content').forEach(c => c.classList.remove('active'));
+
+      const btn = document.getElementById('btn-osint-tab-' + tabId);
+      if (btn) btn.classList.add('active');
+      const content = document.getElementById('tab-osint-' + tabId);
+      if (content) content.classList.add('active');
+    }
+
+    function exportOSINTJSON() {
+      if (!currentOSINTReport) return;
+      const jsonStr = JSON.stringify(currentOSINTReport, null, 2);
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `osint_report_${currentOSINTReport.analyzed_domain || 'domain'}_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    async function renderEmailSenderOSINT(fromAddress) {
+      const container = document.getElementById('email-sender-osint-container');
+      if (!container) return;
+      if (!fromAddress) {
+        container.innerHTML = "<p style='color:var(--text-muted); text-align:center;'>No sender address available for domain OSINT inspection.</p>";
+        return;
+      }
+
+      container.innerHTML = "<div style='text-align: center; color: var(--accent-cyan); padding: 1.5rem;'>Querying Sender Domain OSINT Intelligence for <code>" + escapeHtml(fromAddress) + "</code>...</div>";
+
+      try {
+        const res = await fetch('/api/osint/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: fromAddress, offline: true, dns_timeout: 3.0 })
+        });
+        if (!res.ok) throw new Error("OSINT lookup failed");
+        const json = await res.json();
+        const report = json.report;
+
+        const scoreColor = report.reputation_score >= 75 ? 'var(--risk-critical)' : (report.reputation_score >= 50 ? 'var(--risk-high)' : (report.reputation_score >= 25 ? 'var(--risk-medium)' : 'var(--risk-benign)'));
+        const dns = report.dns_posture || {};
+
+        let brandHtml = "";
+        if (report.brand_risk && (report.brand_risk.has_homoglyphs || report.brand_risk.is_cousin_domain || report.brand_risk.similarity_score >= 0.75)) {
+          brandHtml = `
+            <div class="alert-box" style="margin-top: 1rem;">
+              <strong>[!] LOOKALIKE BRAND ALERT:</strong> Domain <code>${escapeHtml(report.analyzed_domain)}</code> mimics protected brand <strong>${escapeHtml(report.brand_risk.matched_brand_domain)}</strong> (Similarity: ${(report.brand_risk.similarity_score*100).toFixed(1)}%, Levenshtein Distance: ${report.brand_risk.levenshtein_distance}).
+            </div>
+          `;
+        }
+
+        container.innerHTML = `
+          <div style="display: grid; grid-template-columns: 220px 1fr; gap: 1rem; margin-bottom: 1rem;">
+            <div class="stat-box" style="text-align: center;">
+              <div class="title">Domain Reputation Score</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: ${scoreColor};">${report.reputation_score.toFixed(1)} / 100</div>
+              <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-top: 0.25rem;">${report.risk_level || 'CLEAN'}</div>
+              <div style="font-size: 0.75rem; color: var(--accent-cyan); margin-top: 0.25rem;">${escapeHtml(report.category || 'Corporate')}</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">Domain Identity Profile</div>
+              <div style="font-size: 0.85rem; line-height: 1.6; color: var(--text-primary);">
+                <strong>FQDN:</strong> <code>${escapeHtml(report.analyzed_domain)}</code> | <strong>Registered:</strong> <code>${escapeHtml(report.registered_domain)}</code> (TLD: .${escapeHtml(report.tld)})<br>
+                <strong>Punycode/IDN:</strong> ${report.is_punycode ? '<span style="color:var(--risk-high)">YES (' + escapeHtml(report.unicode_domain) + ')</span>' : '<span style="color:var(--text-muted)">No</span>'} | 
+                <strong>Provider:</strong> ${report.disposable_service ? '<span style="color:var(--risk-critical)">Disposable: ' + escapeHtml(report.disposable_service) + '</span>' : (report.freemail_provider ? '<span style="color:var(--accent-cyan)">Freemail: ' + escapeHtml(report.freemail_provider) + '</span>' : 'Corporate/Custom')}<br>
+                <span style="font-size:0.8rem; color:var(--text-secondary);">${escapeHtml(report.summary || '')}</span>
+              </div>
+            </div>
+          </div>
+          ${brandHtml}
+          <div class="table-container" style="margin-top: 0.75rem;">
+            <table>
+              <thead>
+                <tr><th>Mechanism</th><th>Status</th><th>Details</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>MX Routing</strong></td>
+                  <td><span class="auth-badge ${dns.has_mx ? 'auth-pass' : 'auth-fail'}">${dns.has_mx ? 'CONFIGURED' : 'MISSING'}</span></td>
+                  <td>${dns.mx_records ? dns.mx_records.map(m => escapeHtml(m.host || m)).join(', ') : 'No MX records found'}</td>
+                </tr>
+                <tr>
+                  <td><strong>SPF Posture</strong></td>
+                  <td><span class="auth-badge ${dns.spf && dns.spf.strictness === 'STRICT' ? 'auth-pass' : (dns.spf && dns.spf.strictness === 'SOFTFAIL' ? 'auth-pass' : 'auth-fail')}">${dns.spf ? dns.spf.strictness : 'MISSING'}</span></td>
+                  <td><code>${escapeHtml(dns.spf && dns.spf.raw_record ? dns.spf.raw_record : 'No SPF record published')}</code></td>
+                </tr>
+                <tr>
+                  <td><strong>DMARC Enforcement</strong></td>
+                  <td><span class="auth-badge ${dns.dmarc && (dns.dmarc.enforcement === 'REJECT' || dns.dmarc.enforcement === 'QUARANTINE') ? 'auth-pass' : 'auth-fail'}">${dns.dmarc ? dns.dmarc.enforcement : 'MISSING'}</span></td>
+                  <td><code>${escapeHtml(dns.dmarc && dns.dmarc.raw_record ? dns.dmarc.raw_record : 'No DMARC record published')}</code></td>
+                </tr>
+                <tr>
+                  <td><strong>DKIM Selectors</strong></td>
+                  <td><span class="auth-badge ${dns.discovered_dkim && dns.discovered_dkim.length > 0 ? 'auth-pass' : 'auth-none'}">${dns.discovered_dkim ? dns.discovered_dkim.length : 0} DISCOVERED</span></td>
+                  <td>${dns.discovered_dkim && dns.discovered_dkim.length > 0 ? dns.discovered_dkim.map(d => '<code>' + escapeHtml(d.selector) + '</code> (' + escapeHtml(d.key_type) + ')').join(', ') : 'No standard selectors discovered'}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<p style="color:var(--text-muted); text-align:center;">Sender domain OSINT inspection unavailable: ${escapeHtml(err.message)}</p>`;
+      }
+    }
+
     // Auto-restore session state on page load / refresh
     window.addEventListener('DOMContentLoaded', () => {
       // 1. Restore Case & Examiner Metadata
@@ -827,6 +1394,27 @@
       } catch (e) {
         console.error("Failed restoring saved forensic session", e);
       }
+
+      // 4. Restore OSINT State if saved
+      try {
+        const savedOSINTTarget = localStorage.getItem('eft_last_osint_target');
+        const savedOSINTReport = localStorage.getItem('eft_last_osint_report');
+        if (savedOSINTTarget && document.getElementById('osint-target-input')) {
+          document.getElementById('osint-target-input').value = savedOSINTTarget;
+        }
+        if (savedOSINTReport) {
+          currentOSINTReport = JSON.parse(savedOSINTReport);
+          renderOSINTResults(currentOSINTReport);
+        }
+      } catch (e) {}
+
+      // 5. Restore Main Mode
+      try {
+        const savedMode = localStorage.getItem('eft_main_mode');
+        if (savedMode === 'osint') {
+          switchMainMode('osint');
+        }
+      } catch (e) {}
     });
   </script>
 </body>
