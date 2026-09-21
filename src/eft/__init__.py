@@ -3,6 +3,7 @@ from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
 from eft.analysis.domain_osint import DomainOSINTAnalyzer
 from eft.analysis.file_analyzer import FileArtifactAnalyzer
+from eft.analysis.metadata_extractor import MetadataExtractor
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
@@ -66,6 +67,15 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.metadata import (
+    AudioVideoMetadata,
+    DocumentMetadata,
+    ExtractedMetadataReport,
+    GPSCoordinates,
+    ImageEXIFMetadata,
+    MetadataAnomaly,
+    PDFStructureMetadata,
+)
 from eft.models.osint import (
     BIMIPosture,
     BrandMatchResult,
@@ -121,6 +131,7 @@ __all__ = [
     "ContentObfuscationDetector",
     "AttachmentThreatScanner",
     "FileArtifactAnalyzer",
+    "MetadataExtractor",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
@@ -193,4 +204,11 @@ __all__ = [
     "MagicByteSignature",
     "FileTypeIdentification",
     "FileArtifactReport",
+    "GPSCoordinates",
+    "ImageEXIFMetadata",
+    "DocumentMetadata",
+    "PDFStructureMetadata",
+    "AudioVideoMetadata",
+    "MetadataAnomaly",
+    "ExtractedMetadataReport",
 ]

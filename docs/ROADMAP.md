@@ -206,9 +206,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build a standalone binary file identification engine `FileArtifactAnalyzer` that reads raw magic byte headers, validates signatures against a comprehensive database of 500+ file formats (PE, ELF, Mach-O, OLE, PDF, ZIP, 7z, GZ, Images, Media), and detects double-extension or header spoofing.
   * *Why:* Attackers disguise malicious binaries as documents, images, or archives to evade email and endpoint filters.
 * **Done when:**
-  - [ ] True MIME type and file format identified independently of file extension.
-  - [ ] Forensic alerts raised when file extension does not match true binary magic bytes.
-  - [ ] Computes MD5, SHA-1, SHA-256, and SHA-512 hashes and integrates with ISO/IEC 27037 Evidence Ledger.
+  - [x] True MIME type and file format identified independently of file extension.
+  - [x] Forensic alerts raised when file extension does not match true binary magic bytes.
+  - [x] Computes MD5, SHA-1, SHA-256, and SHA-512 hashes and integrates with ISO/IEC 27037 Evidence Ledger.
 
 ### Task 7.2: EXIF & Embedded Document Metadata Extractor
 * **What needs to be built, and why:**

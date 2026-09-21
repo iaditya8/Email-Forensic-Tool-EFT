@@ -5,6 +5,7 @@ from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
 from eft.analysis.domain_osint import DomainOSINTAnalyzer
 from eft.analysis.file_analyzer import FileArtifactAnalyzer
+from eft.analysis.metadata_extractor import MetadataExtractor
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
 from eft.analysis.relay_analyzer import RelayAnalyzer
@@ -22,4 +23,5 @@ __all__ = [
     "ThreatScorer",
     "DomainOSINTAnalyzer",
     "FileArtifactAnalyzer",
+    "MetadataExtractor",
 ]
