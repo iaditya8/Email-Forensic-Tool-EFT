@@ -256,8 +256,8 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build a security inspector that scans unencrypted network streams (HTTP, FTP, Telnet, SMTP, POP3, IMAP) for transmitted cleartext passwords, authentication tokens, API keys, and unencrypted file transfers.
   * *Why:* Identifies immediate credential compromise and data leakage incidents.
 * **Done when:**
-  - [ ] Extracts HTTP Basic Auth, FTP `USER`/`PASS`, and SMTP `AUTH LOGIN` credentials.
-  - [ ] Flags unencrypted sensitive transmissions and defangs leaked secrets in forensic reports.
+  - [x] Extracts HTTP Basic Auth, FTP `USER`/`PASS`, and SMTP `AUTH LOGIN` credentials.
+  - [x] Flags unencrypted sensitive transmissions and defangs leaked secrets in forensic reports.
 
 ---
 
