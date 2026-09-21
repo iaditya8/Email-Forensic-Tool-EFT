@@ -16,6 +16,19 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.osint import (
+    BIMIPosture,
+    BrandMatchResult,
+    DKIMDiscovery,
+    DMARCEnforcement,
+    DMARCPosture,
+    DNSAuthPosture,
+    DomainCategory,
+    DomainOSINTReport,
+    MXRecordInfo,
+    SPFPosture,
+    SPFStrictness,
+)
 from eft.models.threat import (
     CompositeRiskReport,
     RiskFactor,
@@ -52,4 +65,15 @@ __all__ = [
     "RiskFactor",
     "VectorRiskScore",
     "CompositeRiskReport",
+    "DomainCategory",
+    "SPFStrictness",
+    "DMARCEnforcement",
+    "MXRecordInfo",
+    "SPFPosture",
+    "DMARCPosture",
+    "DKIMDiscovery",
+    "BIMIPosture",
+    "DNSAuthPosture",
+    "BrandMatchResult",
+    "DomainOSINTReport",
 ]
