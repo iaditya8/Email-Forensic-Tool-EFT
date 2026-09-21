@@ -1,5 +1,11 @@
 """Data models for Email Forensic Tool (EFT)."""
 
+from eft.models.binary import (
+    FileArtifactReport,
+    FileFormatCategory,
+    FileTypeIdentification,
+    MagicByteSignature,
+)
 from eft.models.canonical import (
     AttachmentMetadata,
     CanonicalEmail,
@@ -76,4 +82,8 @@ __all__ = [
     "DNSAuthPosture",
     "BrandMatchResult",
     "DomainOSINTReport",
+    "FileFormatCategory",
+    "MagicByteSignature",
+    "FileTypeIdentification",
+    "FileArtifactReport",
 ]
