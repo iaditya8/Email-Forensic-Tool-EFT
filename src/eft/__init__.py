@@ -1,11 +1,14 @@
 from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
+from eft.analysis.binary_static_analyzer import BinaryStaticAnalyzer
 from eft.analysis.domain_osint import DomainOSINTAnalyzer
 from eft.analysis.file_analyzer import FileArtifactAnalyzer
 from eft.analysis.metadata_extractor import MetadataExtractor
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
+from eft.analysis.ole_analyzer import OLEMacroAnalyzer
+from eft.analysis.pe_analyzer import PEBinaryAnalyzer
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.analysis.threat_scorer import ThreatScorer
 from eft.analysis.url_analyzer import URLAnalyzer
@@ -89,6 +92,18 @@ from eft.models.osint import (
     SPFPosture,
     SPFStrictness,
 )
+from eft.models.pe_ole import (
+    BinaryStaticReport,
+    EntropyLevel,
+    OLEAnalysisReport,
+    PEAnalysisReport,
+    PEExportedFunction,
+    PEImportedDLL,
+    PEImportedFunction,
+    PESectionAnalysis,
+    SuspiciousAPICategory,
+    VBAMacroStream,
+)
 from eft.models.threat import (
     CompositeRiskReport,
     RiskFactor,
@@ -132,6 +147,9 @@ __all__ = [
     "AttachmentThreatScanner",
     "FileArtifactAnalyzer",
     "MetadataExtractor",
+    "PEBinaryAnalyzer",
+    "OLEMacroAnalyzer",
+    "BinaryStaticAnalyzer",
     "CanonicalEmail",
     "SourceFileInfo",
     "AttachmentMetadata",
@@ -211,4 +229,14 @@ __all__ = [
     "AudioVideoMetadata",
     "MetadataAnomaly",
     "ExtractedMetadataReport",
+    "EntropyLevel",
+    "SuspiciousAPICategory",
+    "PESectionAnalysis",
+    "PEImportedFunction",
+    "PEImportedDLL",
+    "PEExportedFunction",
+    "PEAnalysisReport",
+    "VBAMacroStream",
+    "OLEAnalysisReport",
+    "BinaryStaticReport",
 ]

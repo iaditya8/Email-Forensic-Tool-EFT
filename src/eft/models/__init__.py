@@ -44,6 +44,18 @@ from eft.models.osint import (
     SPFPosture,
     SPFStrictness,
 )
+from eft.models.pe_ole import (
+    BinaryStaticReport,
+    EntropyLevel,
+    OLEAnalysisReport,
+    PEAnalysisReport,
+    PEExportedFunction,
+    PEImportedDLL,
+    PEImportedFunction,
+    PESectionAnalysis,
+    SuspiciousAPICategory,
+    VBAMacroStream,
+)
 from eft.models.threat import (
     CompositeRiskReport,
     RiskFactor,
@@ -102,4 +114,14 @@ __all__ = [
     "AudioVideoMetadata",
     "MetadataAnomaly",
     "ExtractedMetadataReport",
+    "EntropyLevel",
+    "SuspiciousAPICategory",
+    "PESectionAnalysis",
+    "PEImportedFunction",
+    "PEImportedDLL",
+    "PEExportedFunction",
+    "PEAnalysisReport",
+    "VBAMacroStream",
+    "OLEAnalysisReport",
+    "BinaryStaticReport",
 ]
