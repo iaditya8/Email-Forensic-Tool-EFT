@@ -238,9 +238,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Reconstructs TCP/UDP streams, tracks IP conversations, calculates flow latency, and maps IP geolocations via local MaxMind GeoLite2 MMDB.
   * *Why:* Network packet captures represent ground-truth evidence of data exfiltration, lateral movement, and command-and-control (C2) communication.
 * **Done when:**
-  - [ ] Parses IPv4/IPv6, TCP, UDP, ICMP, DNS, HTTP, and TLS handshake packets.
-  - [ ] Chronologically reconstructs conversations and computes total bytes transferred per flow.
-  - [ ] Enriches external IP addresses with GeoIP, ASN, and cloud provider tags.
+  - [x] Parses IPv4/IPv6, TCP, UDP, ICMP, DNS, HTTP, and TLS handshake packets.
+  - [x] Chronologically reconstructs conversations and computes total bytes transferred per flow.
+  - [x] Enriches external IP addresses with GeoIP, ASN, and cloud provider tags.
 
 ### Task 8.2: DNS Exfiltration, Tunneling & Fast-Flux Detector
 * **What needs to be built, and why:**
