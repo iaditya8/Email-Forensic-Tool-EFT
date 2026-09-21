@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Email Forensic Tool (EFT) — Air-Gapped DFIR Analysis Suite</title>
+  <title>Email Forensic Tool (EFT) — Unified DFIR Master Workstation</title>
   <style>
     :root {
       --bg-primary: #0b0f19;
@@ -18,6 +18,9 @@
       --accent-cyan: #06b6d4;
       --accent-blue: #3b82f6;
       --accent-emerald: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-amber: #f59e0b;
       --risk-critical: #ef4444;
       --risk-high: #f97316;
       --risk-medium: #eab308;
@@ -27,29 +30,40 @@
     }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     body { background-color: var(--bg-primary); color: var(--text-primary); min-height: 100vh; display: flex; flex-direction: column; }
-    header { background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    header { background: rgba(17, 24, 39, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border-color); padding: 0.85rem 1.75rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
     .brand { display: flex; align-items: center; gap: 0.75rem; }
-    .brand-icon { width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; color: #fff; box-shadow: 0 0 12px rgba(6, 182, 212, 0.5); }
-    .brand-title { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.025em; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-    .header-badges { display: flex; gap: 0.5rem; }
+    .brand-icon { width: 34px; height: 34px; background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.15rem; color: #fff; box-shadow: 0 0 14px rgba(6, 182, 212, 0.5); }
+    .brand-title { font-size: 1.2rem; font-weight: 700; letter-spacing: -0.025em; background: linear-gradient(to right, #fff, #9ca3af); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    .header-badges { display: flex; gap: 0.5rem; align-items: center; }
     .badge { padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid transparent; }
     .badge-airgap { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: rgba(16, 185, 129, 0.3); }
     .badge-iso { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); }
+    .badge-v2 { background: rgba(139, 92, 246, 0.15); color: #c084fc; border-color: rgba(139, 92, 246, 0.3); }
     
-    main { flex: 1; max-width: 1400px; width: 100%; margin: 0 auto; padding: 2rem; display: flex; flex-direction: column; gap: 2rem; }
+    main { flex: 1; max-width: 1440px; width: 100%; margin: 0 auto; padding: 1.75rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
     
-    /* Ingestion Card */
+    /* Workspace Switcher Bar */
+    .workspace-switcher { display: flex; gap: 0.5rem; background: rgba(17, 24, 39, 0.9); padding: 0.5rem; border-radius: 12px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: var(--glass-shadow); }
+    .ws-tab-btn { flex: 1; min-width: 160px; background: transparent; border: 1px solid transparent; color: var(--text-secondary); padding: 0.7rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; justify-content: center; gap: 0.5rem; white-space: nowrap; }
+    .ws-tab-btn:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1); }
+    .ws-tab-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(59, 130, 246, 0.2)); border-color: var(--accent-cyan); color: #fff; box-shadow: 0 0 14px rgba(6, 182, 212, 0.25); }
+    
+    /* Workspace Panes */
+    .workspace-pane { display: none; flex-direction: column; gap: 1.5rem; }
+    .workspace-pane.active { display: flex; }
+    
+    /* Cards & Controls */
     .card { background: var(--bg-card); backdrop-filter: blur(16px); border: 1px solid var(--border-color); border-radius: 12px; padding: 1.5rem; box-shadow: var(--glass-shadow); }
-    .dropzone { border: 2px dashed var(--border-color); border-radius: 8px; padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s ease; background: rgba(15, 23, 42, 0.4); }
+    .dropzone { border: 2px dashed var(--border-color); border-radius: 8px; padding: 2.25rem 1.5rem; text-align: center; cursor: pointer; transition: all 0.2s ease; background: rgba(15, 23, 42, 0.4); }
     .dropzone:hover, .dropzone.dragover { border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.05); }
     .dropzone-icon { font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--accent-cyan); }
-    .dropzone-text { font-size: 1rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .dropzone-text { font-size: 0.95rem; font-weight: 500; margin-bottom: 0.25rem; }
     .dropzone-subtext { font-size: 0.8rem; color: var(--text-muted); }
     
     .meta-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; }
     .input-group { display: flex; flex-direction: column; gap: 0.35rem; }
     .input-group label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
-    .input-group input, .input-group select { background: #1e293b; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.875rem; outline: none; transition: border-color 0.2s; }
+    .input-group input, .input-group select { background: #1e293b; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.55rem 0.75rem; border-radius: 6px; font-size: 0.875rem; outline: none; transition: border-color 0.2s; }
     .input-group input:focus, .input-group select:focus { border-color: var(--border-focus); }
     
     .btn { background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue)); color: #fff; border: none; padding: 0.65rem 1.25rem; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; }
@@ -58,27 +72,24 @@
     .btn-secondary:hover { background: #475569; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
     
-    /* Results Section */
-    #results-section { display: none; flex-direction: column; gap: 1.5rem; }
-    
-    /* Triage Hero */
+    /* Results Sections */
     .triage-grid { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; }
     @media (max-width: 900px) { .triage-grid { grid-template-columns: 1fr; } }
     
-    .risk-card { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2rem; border-radius: 12px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); }
-    .score-circle { width: 120px; height: 120px; border-radius: 50%; border: 6px solid var(--risk-low); display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 1rem; position: relative; }
-    .score-number { font-size: 2.25rem; font-weight: 800; line-height: 1; }
+    .risk-card { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.75rem; border-radius: 12px; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); }
+    .score-circle { width: 110px; height: 110px; border-radius: 50%; border: 6px solid var(--risk-low); display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 0.75rem; position: relative; }
+    .score-number { font-size: 2.1rem; font-weight: 800; line-height: 1; }
     .score-max { font-size: 0.75rem; color: var(--text-muted); }
-    .threat-tag { font-size: 1.1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+    .threat-tag { font-size: 1rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
     
-    .summary-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
-    .stat-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; }
-    .stat-box .title { font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem; }
-    .stat-box .value { font-size: 1.1rem; font-weight: 600; word-break: break-all; }
+    .summary-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; }
+    .stat-box { background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; }
+    .stat-box .title { font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 0.25rem; }
+    .stat-box .value { font-size: 1.05rem; font-weight: 600; word-break: break-all; }
     
-    /* Tabs */
+    /* Tabs inside cards */
     .tabs-nav { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem; overflow-x: auto; }
-    .tab-btn { background: transparent; border: none; color: var(--text-secondary); padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+    .tab-btn { background: transparent; border: none; color: var(--text-secondary); padding: 0.5rem 0.9rem; border-radius: 6px; font-weight: 600; font-size: 0.825rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
     .tab-btn:hover { color: var(--text-primary); background: rgba(255, 255, 255, 0.05); }
     .tab-btn.active { color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); border-bottom: 2px solid var(--accent-cyan); }
     
@@ -87,9 +98,9 @@
     
     /* Tables */
     .table-container { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
-    th { background: rgba(30, 41, 59, 0.8); color: var(--text-secondary); padding: 0.75rem 1rem; font-weight: 600; border-bottom: 1px solid var(--border-color); }
-    td { padding: 0.75rem 1rem; border-bottom: 1px solid rgba(55, 65, 81, 0.5); vertical-align: top; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; text-align: left; }
+    th { background: rgba(30, 41, 59, 0.8); color: var(--text-secondary); padding: 0.65rem 0.85rem; font-weight: 600; border-bottom: 1px solid var(--border-color); }
+    td { padding: 0.65rem 0.85rem; border-bottom: 1px solid rgba(55, 65, 81, 0.5); vertical-align: top; }
     tr:hover { background: rgba(255, 255, 255, 0.02); }
     
     .auth-badge { padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 700; font-size: 0.75rem; display: inline-block; }
@@ -97,490 +108,817 @@
     .auth-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; }
     .auth-none { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
     
-    .action-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: flex-end; padding-top: 1rem; border-top: 1px solid var(--border-color); }
-    
-    .raw-viewer { background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; font-family: monospace; font-size: 0.8rem; line-height: 1.5; color: #cbd5e1; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
-    
+    .action-bar { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: flex-end; padding-top: 0.85rem; border-top: 1px solid var(--border-color); }
+    .raw-viewer { background: #0f172a; border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; font-family: monospace; font-size: 0.8rem; line-height: 1.5; color: #cbd5e1; max-height: 400px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; }
     .svg-map-wrapper { width: 100%; overflow-x: auto; background: #0f172a; border-radius: 8px; padding: 1rem; border: 1px solid var(--border-color); }
-    
     .alert-box { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 0.75rem; font-size: 0.85rem; border-left: 4px solid var(--risk-critical); background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
     
-    .module-nav { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .module-btn { background: #1e293b; border: 1px solid var(--border-color); color: var(--text-secondary); padding: 0.65rem 1.25rem; border-radius: 8px; font-weight: 600; font-size: 0.9rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 0.5rem; }
-    .module-btn:hover { color: var(--text-primary); border-color: var(--accent-cyan); }
-    .module-btn.active { background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(59, 130, 246, 0.15)); border-color: var(--accent-cyan); color: #fff; box-shadow: 0 0 16px rgba(6, 182, 212, 0.2); }
+    .preset-badge { padding: 0.3rem 0.6rem; background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
+    .preset-badge:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); }
     
-    .osint-preset-badge { padding: 0.3rem 0.6rem; background: rgba(30, 41, 59, 0.8); border: 1px solid var(--border-color); border-radius: 6px; font-size: 0.75rem; color: var(--text-secondary); cursor: pointer; transition: all 0.15s; }
-    .osint-preset-badge:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); background: rgba(6, 182, 212, 0.1); }
-    
-    .osint-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; margin-top: 1rem; }
-    .osint-card { background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.25rem; }
-    .osint-card-title { font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; display: flex; justify-content: space-between; align-items: center; }
-    
+    .grid-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
     .osint-tag { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 4px; text-transform: uppercase; }
     .osint-tag-pass { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
     .osint-tag-warn { background: rgba(234, 179, 8, 0.2); color: #fde047; border: 1px solid rgba(234, 179, 8, 0.4); }
     .osint-tag-fail { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
 
-    footer { border-top: 1px solid var(--border-color); padding: 1.5rem; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-secondary); }
+    footer { border-top: 1px solid var(--border-color); padding: 1.25rem; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--bg-secondary); }
   </style>
 </head>
 <body>
   <header>
     <div class="brand">
-      <div class="brand-icon">E</div>
+      <div class="brand-icon">EFT</div>
       <div>
-        <div class="brand-title">Email Forensic Tool (EFT)</div>
-        <div style="font-size: 0.7rem; color: var(--text-muted);">Enterprise DFIR & Authentication Analysis Suite v1.1.0</div>
+        <div class="brand-title">Unified DFIR Master Workstation</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted);">Email Forensic Tool Enterprise Suite v2.0.0</div>
       </div>
     </div>
     <div class="header-badges">
-      <span class="badge badge-airgap">100% Air-Gapped</span>
-      <span class="badge badge-iso">ISO/IEC 27037 Compliant</span>
+      <span class="badge badge-airgap">&#128737; 100% Air-Gapped</span>
+      <span class="badge badge-iso">&#9878; ISO/IEC 27037</span>
+      <span class="badge badge-v2">&#128640; Phase 11 v2.0</span>
     </div>
   </header>
 
   <main>
-    <!-- Top Module Navigation Switcher -->
-    <div class="module-nav">
-      <button class="module-btn active" id="btn-mode-email" onclick="switchMainMode('email')">&#128190; Email Evidence Deep Triage</button>
-      <button class="module-btn" id="btn-mode-osint" onclick="switchMainMode('osint')">&#127760; Domain & Email OSINT Inspector</button>
-    </div>
+    <!-- Top Workspace Switcher Bar -->
+    <nav class="workspace-switcher" aria-label="Forensic Workspaces">
+      <button class="ws-tab-btn active" id="ws-btn-email" onclick="switchWorkspace('email')">&#128231; Email Evidence Deep Triage</button>
+      <button class="ws-tab-btn" id="ws-btn-file" onclick="switchWorkspace('file')">&#128193; File & Binary Inspector</button>
+      <button class="ws-tab-btn" id="ws-btn-osint" onclick="switchWorkspace('osint')">&#127760; OSINT & Threat Intel</button>
+      <button class="ws-tab-btn" id="ws-btn-pcap" onclick="switchWorkspace('pcap')">&#128225; Network PCAP Analyzer</button>
+      <button class="ws-tab-btn" id="ws-btn-log" onclick="switchWorkspace('log')">&#128220; Log & Cloud Correlator</button>
+      <button class="ws-tab-btn" id="ws-btn-mem" onclick="switchWorkspace('mem')">&#129504; Volatile Memory Scanner</button>
+    </nav>
 
-    <!-- Mode 1: Email Evidence Ingestion -->
-    <div id="email-mode-container">
-      <!-- Ingestion Hero -->
-      <section class="card">
-        <h2 style="font-size: 1.1rem; margin-bottom: 1rem; color: var(--text-primary);">Acquire & Ingest Digital Evidence</h2>
-      <div class="dropzone" id="dropzone" onclick="document.getElementById('file-input').click()">
-        <input type="file" id="file-input" style="display: none;" accept=".eml,.msg,.mbox">
-        <div class="dropzone-icon">&#128190;</div>
-        <div class="dropzone-text" id="file-name-label">Drag & Drop Evidence File (.eml, .msg, .mbox) or Click to Browse</div>
-        <div class="dropzone-subtext">Automatic cryptographic acquisition hashing (MD5, SHA-1, SHA-256, SHA-512)</div>
-      </div>
-
-      <div class="meta-row">
-        <div class="input-group">
-          <label for="sample-select">Load Forensic Corpus Sample</label>
-          <select id="sample-select" onchange="loadCorpusSample(this.value)">
-            <option value="">-- Choose Forensic Sample --</option>
-            <option value="01_benign_corporate.eml">01 - Benign Corporate Email (Clean SPF/DKIM/DMARC)</option>
-            <option value="02_phishing_homoglyph.eml">02 - Phishing Homoglyph & Punycode Deception</option>
-            <option value="03_bec_wire_fraud.eml">03 - Business Email Compromise (CEO Wire Fraud)</option>
-            <option value="04_malware_double_extension.eml">04 - Malware Double Extension & MIME Deception</option>
-            <option value="05_obfuscation_zero_width.eml">05 - Zero-Width & HTML Obfuscation Bypass</option>
-            <option value="06_transit_anomaly_tor.eml">06 - Transit Anomaly (Tor Relay & ASN Mismatch)</option>
-            <option value="07_mixed_mailbox.mbox">07 - Multi-Message MBOX Archive</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label for="case-id">Case Reference ID</label>
-          <input type="text" id="case-id" value="CASE-2026-DFIR" placeholder="e.g. CASE-2026-001">
-        </div>
-        <div class="input-group">
-          <label for="examiner-name">Lead Examiner</label>
-          <input type="text" id="examiner-name" value="Forensic Investigator" placeholder="Examiner Name / Badge">
-        </div>
-      </div>
-
-      <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center;">
-        <button class="btn btn-secondary" id="reset-btn" onclick="resetSession()" style="display: none;">&#128465; New / Reset Investigation</button>
-        <button class="btn" id="analyze-btn" onclick="executeAnalysis()">Run Forensic Triage & Scoring</button>
-      </div>
-    </section>
-
-    <!-- Results Section -->
-    <section id="results-section">
-      <!-- Triage Hero -->
-      <div class="triage-grid">
-        <div class="risk-card">
-          <div class="score-circle" id="score-circle">
-            <div class="score-number" id="risk-score-val">0</div>
-            <div class="score-max">/ 100</div>
-          </div>
-          <div class="threat-tag" id="risk-level-tag">BENIGN</div>
-          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;" id="confidence-val">Confidence: 100%</div>
-        </div>
-
-        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-          <div>
-            <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">Evidence Provenance & Custody Fingerprint</h3>
-            <div class="summary-details">
-              <div class="stat-box">
-                <div class="title">Subject</div>
-                <div class="value" id="res-subject">-</div>
-              </div>
-              <div class="stat-box">
-                <div class="title">Sender (From)</div>
-                <div class="value" id="res-from">-</div>
-              </div>
-              <div class="stat-box">
-                <div class="title">Recipient (To)</div>
-                <div class="value" id="res-to">-</div>
-              </div>
-              <div class="stat-box">
-                <div class="title">SHA-256 Digest</div>
-                <div class="value" id="res-sha256" style="font-size: 0.75rem; font-family: monospace;">-</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="action-bar" style="margin-top: 1rem;">
-            <button class="btn btn-secondary" onclick="exportReport('pdf')">&#128196; Download PDF</button>
-            <button class="btn btn-secondary" onclick="exportReport('stix')">&#128737; STIX 2.1</button>
-            <button class="btn btn-secondary" onclick="exportReport('csv')">&#128202; CSV IoCs</button>
-            <button class="btn btn-secondary" onclick="exportReport('json')">&#123; &#125; JSON</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Critical Findings Alert Panel -->
-      <div id="critical-alerts-container"></div>
-
-      <!-- Detail Tabs -->
+    <!-- ===================================================================== -->
+    <!-- WORKSPACE 1: EMAIL FORENSICS                                          -->
+    <!-- ===================================================================== -->
+    <section class="workspace-pane active" id="ws-pane-email">
+      <!-- Ingestion Card -->
       <div class="card">
-        <div class="tabs-nav">
-          <button class="tab-btn active" onclick="switchTab('auth')">Authentication (SPF/DKIM/DMARC)</button>
-          <button class="tab-btn" onclick="switchTab('transit')">MTA Transit & Map</button>
-          <button class="tab-btn" onclick="switchTab('urls')">URLs & Phishing</button>
-          <button class="tab-btn" onclick="switchTab('attachments')">Attachments & YARA</button>
-          <button class="tab-btn" onclick="switchTab('bec')">BEC & Impersonation</button>
-          <button class="tab-btn" onclick="switchTab('timeline')">Evidence Timeline</button>
-          <button class="tab-btn" onclick="switchTab('osint')">Domain OSINT</button>
-          <button class="tab-btn" onclick="switchTab('raw')">Raw Headers & Inspector</button>
+        <h2 style="font-size: 1.1rem; margin-bottom: 0.85rem; color: var(--text-primary);">&#128231; Acquire & Ingest Email Evidence (.eml, .msg, .mbox)</h2>
+        <div class="dropzone" id="email-dropzone" onclick="document.getElementById('email-file-input').click()">
+          <input type="file" id="email-file-input" style="display: none;" accept=".eml,.msg,.mbox">
+          <div class="dropzone-icon">&#128190;</div>
+          <div class="dropzone-text" id="email-file-name-label">Drag & Drop Evidence File (.eml, .msg, .mbox) or Click to Browse</div>
+          <div class="dropzone-subtext">Cryptographic acquisition hashing (MD5, SHA-1, SHA-256, SHA-512) & Chain of Custody</div>
         </div>
 
-        <!-- Auth Tab -->
-        <div class="tab-content active" id="tab-auth">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Protocol</th>
-                  <th>Verdict</th>
-                  <th>Domain / Selector</th>
-                  <th>Details & Forensic Insights</th>
-                </tr>
-              </thead>
-              <tbody id="auth-table-body"></tbody>
-            </table>
+        <div class="meta-row">
+          <div class="input-group">
+            <label for="sample-select">Load Forensic Corpus Sample</label>
+            <select id="sample-select" onchange="loadCorpusSample(this.value)">
+              <option value="">-- Choose Forensic Sample --</option>
+              <option value="01_benign_corporate.eml">01 - Benign Corporate Email (Clean SPF/DKIM/DMARC)</option>
+              <option value="02_phishing_homoglyph.eml">02 - Phishing Homoglyph & Punycode Deception</option>
+              <option value="03_bec_wire_fraud.eml">03 - Business Email Compromise (CEO Wire Fraud)</option>
+              <option value="04_malware_double_extension.eml">04 - Malware Double Extension & MIME Deception</option>
+              <option value="05_obfuscation_zero_width.eml">05 - Zero-Width & HTML Obfuscation Bypass</option>
+              <option value="06_transit_anomaly_tor.eml">06 - Transit Anomaly (Tor Relay & ASN Mismatch)</option>
+              <option value="07_mixed_mailbox.mbox">07 - Multi-Message MBOX Archive</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label for="case-id">Case Reference ID</label>
+            <input type="text" id="case-id" value="CASE-2026-DFIR" placeholder="e.g. CASE-2026-001">
+          </div>
+          <div class="input-group">
+            <label for="examiner-name">Lead Examiner</label>
+            <input type="text" id="examiner-name" value="Forensic Investigator" placeholder="Examiner Name / Badge">
           </div>
         </div>
 
-        <!-- Transit Tab -->
-        <div class="tab-content" id="tab-transit">
-          <div class="svg-map-wrapper" id="svg-map-container">
-            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading MTA Geodesic Map...</div>
-          </div>
-          <div class="table-container" style="margin-top: 1rem;">
-            <table>
-              <thead>
-                <tr>
-                  <th>Hop #</th>
-                  <th>From IP & Host</th>
-                  <th>By Host</th>
-                  <th>GeoIP / ASN</th>
-                  <th>Latency</th>
-                  <th>Anomalies</th>
-                </tr>
-              </thead>
-              <tbody id="transit-table-body"></tbody>
-            </table>
-          </div>
+        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end; gap: 0.75rem; align-items: center;">
+          <button class="btn btn-secondary" id="email-reset-btn" onclick="resetSession()" style="display: none;">&#128465; Reset Session</button>
+          <button class="btn" id="email-analyze-btn" onclick="executeEmailAnalysis()">Run Forensic Triage & Scoring</button>
         </div>
+      </div>
 
-        <!-- URLs Tab -->
-        <div class="tab-content" id="tab-urls">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Defanged URL</th>
-                  <th>Domain</th>
-                  <th>Risk Score</th>
-                  <th>Flags / Homoglyphs</th>
-                </tr>
-              </thead>
-              <tbody id="urls-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Attachments Tab -->
-        <div class="tab-content" id="tab-attachments">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Filename</th>
-                  <th>MIME Type</th>
-                  <th>Size</th>
-                  <th>SHA-256 Digest</th>
-                  <th>Threat Findings</th>
-                </tr>
-              </thead>
-              <tbody id="attachments-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- BEC Tab -->
-        <div class="tab-content" id="tab-bec">
-          <div id="bec-findings-container"></div>
-        </div>
-
-        <!-- Timeline Tab -->
-        <div class="tab-content" id="tab-timeline">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Timestamp (UTC)</th>
-                  <th>Event Type</th>
-                  <th>Source / Entity</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody id="timeline-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Domain OSINT Tab (for Ingested Email) -->
-        <div class="tab-content" id="tab-osint">
-          <div id="email-sender-osint-container">
-            <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading Sender Domain OSINT Intelligence...</div>
-          </div>
-        </div>
-
-        <!-- Raw Tab -->
-        <div class="tab-content" id="tab-raw">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-            <div>
-              <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Parsed Headers</h4>
-              <div class="raw-viewer" id="raw-headers-viewer"></div>
+      <!-- Email Results Section -->
+      <div id="email-results-section" style="display: none; flex-direction: column; gap: 1.5rem;">
+        <div class="triage-grid">
+          <div class="risk-card">
+            <div class="score-circle" id="score-circle">
+              <div class="score-number" id="risk-score-val">0</div>
+              <div class="score-max">/ 100</div>
             </div>
+            <div class="threat-tag" id="risk-level-tag">BENIGN</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;" id="confidence-val">Confidence: 100%</div>
+          </div>
+
+          <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
             <div>
-              <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Sanitized Body Content</h4>
-              <div class="raw-viewer" id="raw-body-viewer"></div>
+              <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">Evidence Provenance & Custody Fingerprint</h3>
+              <div class="summary-details">
+                <div class="stat-box">
+                  <div class="title">Subject</div>
+                  <div class="value" id="res-subject">-</div>
+                </div>
+                <div class="stat-box">
+                  <div class="title">Sender (From)</div>
+                  <div class="value" id="res-from">-</div>
+                </div>
+                <div class="stat-box">
+                  <div class="title">Recipient (To)</div>
+                  <div class="value" id="res-to">-</div>
+                </div>
+                <div class="stat-box">
+                  <div class="title">SHA-256 Digest</div>
+                  <div class="value" id="res-sha256" style="font-size: 0.75rem; font-family: monospace;">-</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-bar" style="margin-top: 1rem;">
+              <button class="btn btn-secondary" onclick="exportReport('pdf')">&#128196; PDF Report</button>
+              <button class="btn btn-secondary" onclick="exportReport('stix')">&#128737; STIX 2.1</button>
+              <button class="btn btn-secondary" onclick="exportReport('csv')">&#128202; CSV IoCs</button>
+              <button class="btn btn-secondary" onclick="exportReport('json')">&#123; &#125; JSON</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="critical-alerts-container"></div>
+
+        <div class="card">
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchEmailTab('auth')">Authentication (SPF/DKIM/DMARC)</button>
+            <button class="tab-btn" onclick="switchEmailTab('transit')">MTA Transit & Map</button>
+            <button class="tab-btn" onclick="switchEmailTab('urls')">URLs & Phishing</button>
+            <button class="tab-btn" onclick="switchEmailTab('attachments')">Attachments & YARA</button>
+            <button class="tab-btn" onclick="switchEmailTab('bec')">BEC & Impersonation</button>
+            <button class="tab-btn" onclick="switchEmailTab('timeline')">Evidence Timeline</button>
+            <button class="tab-btn" onclick="switchEmailTab('osint')">Domain OSINT</button>
+            <button class="tab-btn" onclick="switchEmailTab('raw')">Raw Headers & Inspector</button>
+          </div>
+
+          <div class="tab-content active" id="tab-email-auth">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr><th>Protocol</th><th>Verdict</th><th>Domain / Selector</th><th>Details & Forensic Insights</th></tr>
+                </thead>
+                <tbody id="auth-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-email-transit">
+            <div class="svg-map-wrapper" id="svg-map-container">
+              <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading MTA Geodesic Map...</div>
+            </div>
+            <div class="table-container" style="margin-top: 1rem;">
+              <table>
+                <thead>
+                  <tr><th>Hop #</th><th>From IP & Host</th><th>By Host</th><th>GeoIP / ASN</th><th>Latency</th><th>Anomalies</th></tr>
+                </thead>
+                <tbody id="transit-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-email-urls">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr><th>Defanged URL</th><th>Domain</th><th>Risk Score</th><th>Flags / Homoglyphs</th></tr>
+                </thead>
+                <tbody id="urls-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-email-attachments">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr><th>Filename</th><th>MIME Type</th><th>Size</th><th>SHA-256 Digest</th><th>Threat Findings</th></tr>
+                </thead>
+                <tbody id="attachments-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-email-bec">
+            <div id="bec-findings-container"></div>
+          </div>
+
+          <div class="tab-content" id="tab-email-timeline">
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr><th>Timestamp (UTC)</th><th>Event Type</th><th>Source / Entity</th><th>Description</th></tr>
+                </thead>
+                <tbody id="timeline-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-email-osint">
+            <div id="email-sender-osint-container">
+              <div style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading Sender Domain OSINT Intelligence...</div>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-email-raw">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+              <div>
+                <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Parsed Headers</h4>
+                <div class="raw-viewer" id="raw-headers-viewer"></div>
+              </div>
+              <div>
+                <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Sanitized Body Content</h4>
+                <div class="raw-viewer" id="raw-body-viewer"></div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
-  </div>
 
-  <!-- Mode 2: Quick OSINT & Domain Inspector -->
-  <div id="osint-mode-container" style="display: none; flex-direction: column; gap: 1.5rem;">
-    <section class="card">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-        <div>
-          <h2 style="font-size: 1.15rem; color: var(--text-primary); margin-bottom: 0.25rem;">Domain & Email Address OSINT Inspector</h2>
-          <p style="font-size: 0.8rem; color: var(--text-secondary);">Perform instantaneous pre-triage intelligence queries for SPF/DMARC posture, DKIM selector discovery, BIMI records, homoglyph typosquatting, and domain reputation.</p>
-        </div>
-        <span class="badge badge-airgap">Standalone / Air-Gapped</span>
-      </div>
-
-      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
-        <input type="text" id="osint-target-input" placeholder="Enter target email (e.g. user@target.com) or domain (e.g. micros0ft.com)..." style="flex: 1; background: #1e293b; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.95rem; outline: none;" onkeydown="if(event.key==='Enter') executeOSINTLookup()">
-        <button class="btn" id="osint-submit-btn" onclick="executeOSINTLookup()" style="padding: 0.75rem 1.5rem;">&#128269; Inspect Target</button>
-      </div>
-
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
-        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-          <span style="font-size: 0.75rem; color: var(--text-muted);">Quick Presets:</span>
-          <span class="osint-preset-badge" onclick="setOSINTPreset('micros0ft.com')">micros0ft.com (Homoglyph)</span>
-          <span class="osint-preset-badge" onclick="setOSINTPreset('billing-paypal.com')">billing-paypal.com (Lookalike)</span>
-          <span class="osint-preset-badge" onclick="setOSINTPreset('support@mailinator.com')">mailinator.com (Disposable)</span>
-          <span class="osint-preset-badge" onclick="setOSINTPreset('admin@google.com')">google.com (Strict SPF/DMARC)</span>
-          <span class="osint-preset-badge" onclick="setOSINTPreset('contact@bad-config.org')">bad-config.org (+all Permissive)</span>
-        </div>
-
-        <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
-          <input type="checkbox" id="osint-offline-toggle" checked style="accent-color: var(--accent-cyan);">
-          <span>Offline Air-Gapped Simulation</span>
-        </label>
-      </div>
-    </section>
-
-    <!-- OSINT Loading State -->
-    <div id="osint-loading-state" style="display: none; text-align: center; padding: 2.5rem;" class="card">
-      <div style="font-size: 1.5rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">&#9881; Resolving DNS Posture & Threat Feeds...</div>
-      <div style="font-size: 0.85rem; color: var(--text-muted);">Querying MX, SPF, DMARC, DKIM selectors, and matching homoglyph watchlist</div>
-    </div>
-
-    <!-- OSINT Results Container -->
-    <div id="osint-results-container" style="display: none; flex-direction: column; gap: 1.5rem;">
-      <!-- Hero Overview -->
-      <div class="triage-grid">
-        <div class="risk-card">
-          <div class="score-circle" id="osint-score-circle">
-            <div class="score-number" id="osint-score-val">0</div>
-            <div class="score-max">/ 100</div>
-          </div>
-          <div class="threat-tag" id="osint-risk-tag">CLEAN</div>
-          <div style="font-size: 0.8rem; color: var(--accent-cyan); margin-top: 0.5rem; font-weight: 600;" id="osint-category-pill">Corporate</div>
-        </div>
-
-        <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
-          <div>
-            <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">Target Profile & Identity Resolution</h3>
-            <div class="summary-details">
-              <div class="stat-box">
-                <div class="title">Target Input</div>
-                <div class="value" id="osint-res-target" style="font-size: 0.95rem;">-</div>
-              </div>
-              <div class="stat-box">
-                <div class="title">Analyzed Domain / FQDN</div>
-                <div class="value" id="osint-res-domain" style="font-size: 0.95rem;">-</div>
-              </div>
-              <div class="stat-box">
-                <div class="title">Registered Domain</div>
-                <div class="value" id="osint-res-regdomain" style="font-size: 0.95rem;">-</div>
-              </div>
-              <div class="stat-box">
-                <div class="title">IDN / Punycode</div>
-                <div class="value" id="osint-res-punycode" style="font-size: 0.95rem;">-</div>
-              </div>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.4;" id="osint-res-summary"></p>
-          </div>
-
-          <div class="action-bar" style="margin-top: 1rem;">
-            <button class="btn btn-secondary" onclick="exportOSINTJSON()">&#123; &#125; Download OSINT JSON</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Brand Alert (Hidden unless alert detected) -->
-      <div id="osint-brand-alert-box" style="display: none;" class="alert-box"></div>
-
-      <!-- DNS & Authentication Cards -->
-      <div class="osint-grid">
-        <!-- MX & Routing -->
-        <div class="osint-card">
-          <div class="osint-card-title">
-            <span>&#128233; MX Mail Exchangers</span>
-            <span id="osint-badge-mx" class="osint-tag osint-tag-pass">CONFIGURED</span>
-          </div>
-          <div id="osint-mx-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
-        </div>
-
-        <!-- SPF Posture -->
-        <div class="osint-card">
-          <div class="osint-card-title">
-            <span>&#128737; SPF Policy Posture</span>
-            <span id="osint-badge-spf" class="osint-tag osint-tag-pass">STRICT</span>
-          </div>
-          <div id="osint-spf-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
-        </div>
-
-        <!-- DMARC Posture -->
-        <div class="osint-card">
-          <div class="osint-card-title">
-            <span>&#128272; DMARC Enforcement</span>
-            <span id="osint-badge-dmarc" class="osint-tag osint-tag-pass">REJECT</span>
-          </div>
-          <div id="osint-dmarc-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
-        </div>
-
-        <!-- DKIM & BIMI -->
-        <div class="osint-card">
-          <div class="osint-card-title">
-            <span>&#128273; DKIM Selectors & BIMI</span>
-            <span id="osint-badge-dkim" class="osint-tag osint-tag-pass">PROBED</span>
-          </div>
-          <div id="osint-dkim-bimi-content" style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);"></div>
-        </div>
-      </div>
-
-      <!-- Threat Factors & Remediation Section -->
+    <!-- ===================================================================== -->
+    <!-- WORKSPACE 2: FILE & BINARY INSPECTOR                                  -->
+    <!-- ===================================================================== -->
+    <section class="workspace-pane" id="ws-pane-file">
       <div class="card">
-        <div class="tabs-nav">
-          <button class="tab-btn active" id="btn-osint-tab-factors" onclick="switchOSINTDetailTab('factors')">Contributing Risk Factors</button>
-          <button class="tab-btn" id="btn-osint-tab-remediation" onclick="switchOSINTDetailTab('remediation')">Forensic Hardening Advice</button>
-          <button class="tab-btn" id="btn-osint-tab-raw" onclick="switchOSINTDetailTab('raw')">Raw JSON Report</button>
+        <h2 style="font-size: 1.1rem; margin-bottom: 0.85rem; color: var(--text-primary);">&#128193; File, Executable & Artifact Deep Inspector</h2>
+        <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 1rem;">Dissect binaries (PE/ELF/Mach-O), documents (PDF/Office), and archives for magic byte validation, Shannon entropy, section anomalies, and embedded EXIF/OLE metadata.</p>
+        
+        <div class="dropzone" id="file-dropzone" onclick="document.getElementById('file-upload-input').click()">
+          <input type="file" id="file-upload-input" style="display: none;">
+          <div class="dropzone-icon">&#128194;</div>
+          <div class="dropzone-text" id="file-upload-label">Drag & Drop Any Evidence File (.exe, .dll, .elf, .pdf, .docx, .zip, etc.)</div>
+          <div class="dropzone-subtext">Zero external execution — 100% safe static inspection & entropy calculation</div>
         </div>
 
-        <div class="tab-content active" id="tab-osint-factors">
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Severity</th>
-                  <th>Threat Factor</th>
-                  <th>Score Contribution</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody id="osint-factors-tbody"></tbody>
-            </table>
+        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+          <button class="btn" id="file-analyze-btn" onclick="executeFileAnalysis()">Inspect File Artifact</button>
+        </div>
+      </div>
+
+      <div id="file-results-section" style="display: none; flex-direction: column; gap: 1.5rem;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.05rem; color: var(--accent-cyan);" id="file-res-title">File Artifact Summary</h3>
+            <button class="btn btn-secondary" onclick="exportFileJSON()">&#123; &#125; Export JSON</button>
+          </div>
+          <div class="summary-details">
+            <div class="stat-box">
+              <div class="title">Filename & Size</div>
+              <div class="value" id="file-res-name">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">MIME & Magic Type</div>
+              <div class="value" id="file-res-mime" style="font-size: 0.95rem;">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">Shannon Entropy</div>
+              <div class="value" id="file-res-entropy">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">SHA-256 Digest</div>
+              <div class="value" id="file-res-sha256" style="font-size: 0.72rem; font-family: monospace;">-</div>
+            </div>
           </div>
         </div>
 
-        <div class="tab-content" id="tab-osint-remediation">
-          <div id="osint-remediation-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
-        </div>
+        <div class="card">
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchFileTab('static')">Executable & PE/ELF Structure</button>
+            <button class="tab-btn" onclick="switchFileTab('metadata')">Document & EXIF Metadata</button>
+            <button class="tab-btn" onclick="switchFileTab('hashes')">Cryptographic Hashes</button>
+            <button class="tab-btn" onclick="switchFileTab('raw')">Raw JSON Report</button>
+          </div>
 
-        <div class="tab-content" id="tab-osint-raw">
-          <div class="raw-viewer" id="osint-raw-json-viewer"></div>
+          <div class="tab-content active" id="tab-file-static">
+            <div id="file-static-content"></div>
+          </div>
+          <div class="tab-content" id="tab-file-metadata">
+            <div id="file-metadata-content"></div>
+          </div>
+          <div class="tab-content" id="tab-file-hashes">
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Algorithm</th><th>Hash Digest</th></tr></thead>
+                <tbody id="file-hashes-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="tab-content" id="tab-file-raw">
+            <div class="raw-viewer" id="file-raw-json"></div>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- WORKSPACE 3: OSINT & THREAT INTELLIGENCE                              -->
+    <!-- ===================================================================== -->
+    <section class="workspace-pane" id="ws-pane-osint">
+      <div id="osint-mode-container" class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <div>
+            <h2 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 0.25rem;">&#127760; Domain & Email OSINT Inspector</h2>
+            <p style="font-size: 0.825rem; color: var(--text-secondary);">Query DNS posture (SPF/DMARC/DKIM/BIMI), homoglyph brand impersonation, and IP geolocation/ASN data.</p>
+          </div>
+        </div>
+
+        <!-- Subtabs for Domain vs IP -->
+        <div class="tabs-nav" style="margin-bottom: 1rem;">
+          <button class="tab-btn active" id="osint-subtab-btn-domain" onclick="switchOSINTSubMode('domain')">&#128233; Domain & Email Posture</button>
+          <button class="tab-btn" id="osint-subtab-btn-ip" onclick="switchOSINTSubMode('ip')">&#127758; IP Geolocation & ASN Lookup</button>
+        </div>
+
+        <!-- Domain Lookup Form -->
+        <div id="osint-domain-form-box">
+          <div style="display: flex; gap: 0.75rem;">
+            <input type="text" id="osint-target-input" placeholder="Enter target email (e.g. user@target.com) or domain (e.g. micros0ft.com)..." style="flex: 1; background: #1e293b; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none;" onkeydown="if(event.key==='Enter') executeOSINTLookup()">
+            <button class="btn" id="osint-submit-btn" onclick="executeOSINTLookup()">&#128269; Inspect Domain</button>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Presets:</span>
+              <span class="preset-badge" onclick="setOSINTPreset('micros0ft.com')">micros0ft.com</span>
+              <span class="preset-badge" onclick="setOSINTPreset('billing-paypal.com')">billing-paypal.com</span>
+              <span class="preset-badge" onclick="setOSINTPreset('admin@google.com')">google.com</span>
+              <span class="preset-badge" onclick="setOSINTPreset('temp-mail.org')">temp-mail.org</span>
+            </div>
+            <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer;">
+              <input type="checkbox" id="osint-offline-toggle" checked style="accent-color: var(--accent-cyan);">
+              <span>Offline Air-Gapped Simulation</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- IP Lookup Form -->
+        <div id="osint-ip-form-box" style="display: none;">
+          <div style="display: flex; gap: 0.75rem;">
+            <input type="text" id="osint-ip-input" placeholder="Enter target IPv4 / IPv6 address (e.g. 8.8.8.8, 1.1.1.1, 10.0.0.1)..." style="flex: 1; background: #1e293b; border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.9rem; outline: none;" onkeydown="if(event.key==='Enter') executeIPLookup()">
+            <button class="btn" id="ip-submit-btn" onclick="executeIPLookup()">&#128269; Lookup IP</button>
+          </div>
+          <div style="display: flex; gap: 0.4rem; align-items: center; margin-top: 0.75rem; flex-wrap: wrap;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">Presets:</span>
+            <span class="preset-badge" onclick="setIPPreset('8.8.8.8')">8.8.8.8 (Google DNS)</span>
+            <span class="preset-badge" onclick="setIPPreset('1.1.1.1')">1.1.1.1 (Cloudflare)</span>
+            <span class="preset-badge" onclick="setIPPreset('192.168.1.1')">192.168.1.1 (RFC 1918 Private)</span>
+            <span class="preset-badge" onclick="setIPPreset('185.220.101.5')">185.220.101.5 (Tor Exit)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Domain OSINT Results -->
+      <div id="osint-domain-results" style="display: none; flex-direction: column; gap: 1.5rem;">
+        <div class="triage-grid">
+          <div class="risk-card">
+            <div class="score-circle" id="osint-score-circle">
+              <div class="score-number" id="osint-score-val">0</div>
+              <div class="score-max">/ 100</div>
+            </div>
+            <div class="threat-tag" id="osint-risk-tag">CLEAN</div>
+            <div style="font-size: 0.8rem; color: var(--accent-cyan); margin-top: 0.5rem; font-weight: 600;" id="osint-category-pill">Corporate</div>
+          </div>
+
+          <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--accent-cyan);">Target Profile & Identity Resolution</h3>
+              <div class="summary-details">
+                <div class="stat-box">
+                  <div class="title">Target Input</div>
+                  <div class="value" id="osint-res-target" style="font-size: 0.95rem;">-</div>
+                </div>
+                <div class="stat-box">
+                  <div class="title">Analyzed Domain / FQDN</div>
+                  <div class="value" id="osint-res-domain" style="font-size: 0.95rem;">-</div>
+                </div>
+                <div class="stat-box">
+                  <div class="title">Registered Domain</div>
+                  <div class="value" id="osint-res-regdomain" style="font-size: 0.95rem;">-</div>
+                </div>
+                <div class="stat-box">
+                  <div class="title">IDN / Punycode</div>
+                  <div class="value" id="osint-res-punycode" style="font-size: 0.95rem;">-</div>
+                </div>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.75rem; line-height: 1.4;" id="osint-res-summary"></p>
+            </div>
+
+            <div class="action-bar" style="margin-top: 1rem;">
+              <button class="btn btn-secondary" onclick="exportOSINTJSON()">&#123; &#125; Download OSINT JSON</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="osint-brand-alert-box" style="display: none;" class="alert-box"></div>
+
+        <div class="grid-2col">
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-cyan);">&#128233; MX Routing</span>
+              <span id="osint-badge-mx" class="osint-tag osint-tag-pass">CONFIGURED</span>
+            </div>
+            <div id="osint-mx-content" style="font-size: 0.85rem; color: var(--text-secondary);"></div>
+          </div>
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-cyan);">&#128737; SPF Posture</span>
+              <span id="osint-badge-spf" class="osint-tag osint-tag-pass">STRICT</span>
+            </div>
+            <div id="osint-spf-content" style="font-size: 0.85rem; color: var(--text-secondary);"></div>
+          </div>
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-cyan);">&#128272; DMARC Enforcement</span>
+              <span id="osint-badge-dmarc" class="osint-tag osint-tag-pass">REJECT</span>
+            </div>
+            <div id="osint-dmarc-content" style="font-size: 0.85rem; color: var(--text-secondary);"></div>
+          </div>
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+              <span style="font-weight: 700; font-size: 0.85rem; color: var(--accent-cyan);">&#128273; DKIM Selectors & BIMI</span>
+              <span id="osint-badge-dkim" class="osint-tag osint-tag-pass">PROBED</span>
+            </div>
+            <div id="osint-dkim-bimi-content" style="font-size: 0.85rem; color: var(--text-secondary);"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchOSINTDetailTab('factors')">Contributing Risk Factors</button>
+            <button class="tab-btn" onclick="switchOSINTDetailTab('remediation')">Forensic Hardening Advice</button>
+            <button class="tab-btn" onclick="switchOSINTDetailTab('raw')">Raw JSON Report</button>
+          </div>
+          <div class="tab-content active" id="tab-osint-factors">
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Severity</th><th>Threat Factor</th><th>Contribution</th><th>Description</th></tr></thead>
+                <tbody id="osint-factors-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="tab-content" id="tab-osint-remediation">
+            <div id="osint-remediation-list" style="display: flex; flex-direction: column; gap: 0.5rem;"></div>
+          </div>
+          <div class="tab-content" id="tab-osint-raw">
+            <div class="raw-viewer" id="osint-raw-json-viewer"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- IP Intelligence Results -->
+      <div id="osint-ip-results" style="display: none; flex-direction: column; gap: 1.5rem;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.05rem; color: var(--accent-cyan);">IP Geolocation & Autonomous System Intel</h3>
+            <button class="btn btn-secondary" onclick="exportIPJSON()">&#123; &#125; Export JSON</button>
+          </div>
+          <div class="summary-details">
+            <div class="stat-box">
+              <div class="title">IP Address</div>
+              <div class="value" id="ip-res-addr" style="font-family: monospace;">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">Location & Country</div>
+              <div class="value" id="ip-res-location">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">ASN & ISP / Org</div>
+              <div class="value" id="ip-res-asn">-</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">Network Classification</div>
+              <div class="value" id="ip-res-type">-</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 1rem;" class="raw-viewer" id="ip-raw-viewer"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- WORKSPACE 4: NETWORK PCAP ANALYZER                                    -->
+    <!-- ===================================================================== -->
+    <section class="workspace-pane" id="ws-pane-pcap">
+      <div class="card">
+        <h2 style="font-size: 1.1rem; margin-bottom: 0.85rem; color: var(--text-primary);">&#128225; Network PCAP / PCAPNG Traffic Analyzer</h2>
+        <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 1rem;">Dissect packet capture streams for DNS exfiltration, tunneling, fast-flux domain networks, and cleartext credential leaks (HTTP, FTP, Telnet, POP3, SMTP, IMAP).</p>
+
+        <div class="dropzone" id="pcap-dropzone" onclick="document.getElementById('pcap-file-input').click()">
+          <input type="file" id="pcap-file-input" style="display: none;" accept=".pcap,.pcapng,.cap">
+          <div class="dropzone-icon">&#128225;</div>
+          <div class="dropzone-text" id="pcap-file-label">Drag & Drop Network Capture (.pcap, .pcapng, .cap)</div>
+          <div class="dropzone-subtext">Deep packet inspection with 100% air-gapped protocol decoders</div>
+        </div>
+
+        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+          <button class="btn" id="pcap-analyze-btn" onclick="executePCAPAnalysis()">Analyze Packet Capture</button>
+        </div>
+      </div>
+
+      <div id="pcap-results-section" style="display: none; flex-direction: column; gap: 1.5rem;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.05rem; color: var(--accent-cyan);" id="pcap-res-title">PCAP Dissection Summary</h3>
+            <button class="btn btn-secondary" onclick="exportPCAPJSON()">&#123; &#125; Export JSON</button>
+          </div>
+          <div class="summary-details">
+            <div class="stat-box">
+              <div class="title">Total Packets</div>
+              <div class="value" id="pcap-res-packets">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">DNS Queries Analyzed</div>
+              <div class="value" id="pcap-res-dns">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">Cleartext Credential Leaks</div>
+              <div class="value" id="pcap-res-creds" style="color: var(--risk-critical);">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">DNS Tunneling / Threats</div>
+              <div class="value" id="pcap-res-threats" style="color: var(--risk-high);">0</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchPCAPTab('creds')">Cleartext Credentials</button>
+            <button class="tab-btn" onclick="switchPCAPTab('dns')">DNS Tunneling & Fast-Flux</button>
+            <button class="tab-btn" onclick="switchPCAPTab('protocols')">High-Risk Protocols</button>
+            <button class="tab-btn" onclick="switchPCAPTab('raw')">Raw Report JSON</button>
+          </div>
+
+          <div class="tab-content active" id="tab-pcap-creds">
+            <div class="table-container">
+              <table>
+                <thead><tr><th>Protocol</th><th>Source IP:Port</th><th>Dest IP:Port</th><th>Username</th><th>Password / Token</th><th>Context</th></tr></thead>
+                <tbody id="pcap-creds-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="tab-content" id="tab-pcap-dns">
+            <div id="pcap-dns-content"></div>
+          </div>
+
+          <div class="tab-content" id="tab-pcap-protocols">
+            <div id="pcap-protocols-content"></div>
+          </div>
+
+          <div class="tab-content" id="tab-pcap-raw">
+            <div class="raw-viewer" id="pcap-raw-json"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- WORKSPACE 5: LOG & CLOUD CORRELATOR                                   -->
+    <!-- ===================================================================== -->
+    <section class="workspace-pane" id="ws-pane-log">
+      <div class="card">
+        <h2 style="font-size: 1.1rem; margin-bottom: 0.85rem; color: var(--text-primary);">&#128220; Windows Event & Cloud Audit Log Correlator</h2>
+        <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 1rem;">Correlate Windows EVTX logs, Sysmon process creation (Event 1 / 4688), failed authentication brute force (Event 4625), and CloudTrail/M365 audit trails.</p>
+
+        <div class="dropzone" id="log-dropzone" onclick="document.getElementById('log-file-input').click()">
+          <input type="file" id="log-file-input" style="display: none;" accept=".evtx,.json,.csv,.xml,.log">
+          <div class="dropzone-icon">&#128220;</div>
+          <div class="dropzone-text" id="log-file-label">Drag & Drop Log Artifact (.evtx, .json, .csv, .xml, .log)</div>
+          <div class="dropzone-subtext">Automatic parser selection and MITRE ATT&CK technique mapping</div>
+        </div>
+
+        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+          <button class="btn" id="log-analyze-btn" onclick="executeLogAnalysis()">Correlate Log Events</button>
+        </div>
+      </div>
+
+      <div id="log-results-section" style="display: none; flex-direction: column; gap: 1.5rem;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.05rem; color: var(--accent-cyan);" id="log-res-title">Event Correlation Summary</h3>
+            <button class="btn btn-secondary" onclick="exportLogJSON()">&#123; &#125; Export JSON</button>
+          </div>
+          <div class="summary-details">
+            <div class="stat-box">
+              <div class="title">Total Records Parsed</div>
+              <div class="value" id="log-res-total">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">High-Severity Detections</div>
+              <div class="value" id="log-res-high" style="color: var(--risk-critical);">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">MITRE ATT&CK Techniques</div>
+              <div class="value" id="log-res-mitre" style="color: var(--accent-cyan);">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">Log Source Type</div>
+              <div class="value" id="log-res-type">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchLogTab('findings')">Security Findings & MITRE</button>
+            <button class="tab-btn" onclick="switchLogTab('timeline')">Process & Event Timeline</button>
+            <button class="tab-btn" onclick="switchLogTab('raw')">Raw JSON Report</button>
+          </div>
+
+          <div class="tab-content active" id="tab-log-findings">
+            <div id="log-findings-content"></div>
+          </div>
+
+          <div class="tab-content" id="tab-log-timeline">
+            <div id="log-timeline-content"></div>
+          </div>
+
+          <div class="tab-content" id="tab-log-raw">
+            <div class="raw-viewer" id="log-raw-json"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- WORKSPACE 6: VOLATILE MEMORY SCANNER                                  -->
+    <!-- ===================================================================== -->
+    <section class="workspace-pane" id="ws-pane-mem">
+      <div class="card">
+        <h2 style="font-size: 1.1rem; margin-bottom: 0.85rem; color: var(--text-primary);">&#129504; Volatile Memory Scanner & YARA Attribution</h2>
+        <p style="font-size: 0.825rem; color: var(--text-secondary); margin-bottom: 1rem;">Inspect volatile memory dumps (.dmp, .raw, .vmem) for extracted strings, network sockets, cryptocurrency wallets, and compiled YARA malware signatures.</p>
+
+        <div class="dropzone" id="mem-dropzone" onclick="document.getElementById('mem-file-input').click()">
+          <input type="file" id="mem-file-input" style="display: none;" accept=".dmp,.raw,.vmem,.bin">
+          <div class="dropzone-icon">&#129504;</div>
+          <div class="dropzone-text" id="mem-file-label">Drag & Drop Memory Dump (.dmp, .raw, .vmem, .bin)</div>
+          <div class="dropzone-subtext">Chunked stream scanning with compiled YARA signature engine</div>
+        </div>
+
+        <div style="margin-top: 1.25rem; display: flex; justify-content: flex-end;">
+          <button class="btn" id="mem-analyze-btn" onclick="executeMemAnalysis()">Scan Memory Dump</button>
+        </div>
+      </div>
+
+      <div id="mem-results-section" style="display: none; flex-direction: column; gap: 1.5rem;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.05rem; color: var(--accent-cyan);" id="mem-res-title">Memory Analysis Summary</h3>
+            <button class="btn btn-secondary" onclick="exportMemJSON()">&#123; &#125; Export JSON</button>
+          </div>
+          <div class="summary-details">
+            <div class="stat-box">
+              <div class="title">Total Strings Extracted</div>
+              <div class="value" id="mem-res-strings">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">IoC Patterns Matched</div>
+              <div class="value" id="mem-res-iocs" style="color: var(--accent-cyan);">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">YARA Rule Matches</div>
+              <div class="value" id="mem-res-yara" style="color: var(--risk-critical);">0</div>
+            </div>
+            <div class="stat-box">
+              <div class="title">Memory SHA-256</div>
+              <div class="value" id="mem-res-sha256" style="font-size: 0.72rem; font-family: monospace;">-</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="tabs-nav">
+            <button class="tab-btn active" onclick="switchMemTab('yara')">YARA Malware Rules</button>
+            <button class="tab-btn" onclick="switchMemTab('iocs')">Extracted IoCs</button>
+            <button class="tab-btn" onclick="switchMemTab('strings')">Extracted Strings</button>
+            <button class="tab-btn" onclick="switchMemTab('raw')">Raw JSON Report</button>
+          </div>
+
+          <div class="tab-content active" id="tab-mem-yara">
+            <div id="mem-yara-content"></div>
+          </div>
+
+          <div class="tab-content" id="tab-mem-iocs">
+            <div id="mem-iocs-content"></div>
+          </div>
+
+          <div class="tab-content" id="tab-mem-strings">
+            <div class="raw-viewer" id="mem-strings-content"></div>
+          </div>
+
+          <div class="tab-content" id="tab-mem-raw">
+            <div class="raw-viewer" id="mem-raw-json"></div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer>
-    Email Forensic Tool (EFT) — Autonomous DFIR & Threat Analysis Engine | ISO/IEC 27037 Digital Chain of Custody
+    Email Forensic Tool (EFT) — Autonomous DFIR Master Workstation | ISO/IEC 27037 Digital Chain of Custody | 100% Air-Gapped
   </footer>
 
   <script>
+    // -------------------------------------------------------------------------
+    // GLOBAL STATE & STORAGE
+    // -------------------------------------------------------------------------
     let currentEvidenceFile = null;
     let currentAnalysisData = null;
     let currentSampleName = null;
+    let currentOSINTReport = null;
+    let currentIPReport = null;
+    let currentFileReport = null;
+    let currentPCAPReport = null;
+    let currentLogReport = null;
+    let currentMemReport = null;
 
-    const dropzone = document.getElementById('dropzone');
-    const fileInput = document.getElementById('file-input');
-    const fileNameLabel = document.getElementById('file-name-label');
-    const resetBtn = document.getElementById('reset-btn');
+    let selectedFileArtifact = null;
+    let selectedPCAPFile = null;
+    let selectedLogFile = null;
+    let selectedMemFile = null;
+
+    // -------------------------------------------------------------------------
+    // UTILS
+    // -------------------------------------------------------------------------
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    // -------------------------------------------------------------------------
+    // WORKSPACE SWITCHER
+    // -------------------------------------------------------------------------
+    function switchWorkspace(wsId) {
+      document.querySelectorAll('.ws-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.workspace-pane').forEach(p => p.classList.remove('active'));
+
+      const targetBtn = document.getElementById('ws-btn-' + wsId);
+      const targetPane = document.getElementById('ws-pane-' + wsId);
+
+      if (targetBtn) targetBtn.classList.add('active');
+      if (targetPane) targetPane.classList.add('active');
+
+      try {
+        localStorage.setItem('eft_active_workspace', wsId);
+      } catch (e) {}
+    }
+
+    // Backward-compatibility alias
+    function switchMainMode(mode) {
+      switchWorkspace(mode);
+    }
+
+    // -------------------------------------------------------------------------
+    // WORKSPACE 1: EMAIL FORENSICS
+    // -------------------------------------------------------------------------
+    const emailDropzone = document.getElementById('email-dropzone');
+    const emailFileInput = document.getElementById('email-file-input');
+    const emailFileNameLabel = document.getElementById('email-file-name-label');
+    const emailResetBtn = document.getElementById('email-reset-btn');
     const caseIdInput = document.getElementById('case-id');
     const examinerInput = document.getElementById('examiner-name');
     const sampleSelectInput = document.getElementById('sample-select');
 
-    // Auto-save case metadata changes
     if (caseIdInput) caseIdInput.addEventListener('input', () => localStorage.setItem('eft_case_id', caseIdInput.value));
     if (examinerInput) examinerInput.addEventListener('input', () => localStorage.setItem('eft_examiner_name', examinerInput.value));
 
-    // Drag & Drop
     ['dragenter', 'dragover'].forEach(name => {
-      dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+      if (emailDropzone) emailDropzone.addEventListener(name, (e) => { e.preventDefault(); emailDropzone.classList.add('dragover'); });
     });
     ['dragleave', 'drop'].forEach(name => {
-      dropzone.addEventListener(name, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+      if (emailDropzone) emailDropzone.addEventListener(name, (e) => { e.preventDefault(); emailDropzone.classList.remove('dragover'); });
     });
-    dropzone.addEventListener('drop', (e) => {
-      if (e.dataTransfer.files.length > 0) {
-        handleFileSelect(e.dataTransfer.files[0]);
-      }
-    });
-    fileInput.addEventListener('change', (e) => {
-      if (e.target.files.length > 0) {
-        handleFileSelect(e.target.files[0]);
-      }
-    });
+    if (emailDropzone) {
+      emailDropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handleEmailFileSelect(e.dataTransfer.files[0]);
+      });
+    }
+    if (emailFileInput) {
+      emailFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleEmailFileSelect(e.target.files[0]);
+      });
+    }
 
-    function handleFileSelect(file) {
+    function handleEmailFileSelect(file) {
       currentEvidenceFile = file;
       currentSampleName = null;
-      fileNameLabel.innerHTML = `<strong>Selected Evidence:</strong> ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-      document.getElementById('sample-select').value = "";
+      emailFileNameLabel.innerHTML = `<strong>Selected Evidence:</strong> ${escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)`;
+      if (sampleSelectInput) sampleSelectInput.value = "";
     }
 
     function resetSession() {
       try {
         localStorage.removeItem('eft_last_analysis');
         localStorage.removeItem('eft_last_sample');
-        localStorage.removeItem('eft_active_tab');
+        localStorage.removeItem('eft_active_email_tab');
       } catch (e) {}
       currentEvidenceFile = null;
       currentAnalysisData = null;
@@ -592,688 +930,318 @@
       if (!sampleName) return;
       currentEvidenceFile = null;
       currentSampleName = sampleName;
-      fileNameLabel.innerHTML = `<strong>Corpus Sample Selected:</strong> ${sampleName}`;
-      document.getElementById('analyze-btn').innerText = "Analyzing Sample...";
-      document.getElementById('analyze-btn').disabled = true;
+      emailFileNameLabel.innerHTML = `<strong>Corpus Sample Selected:</strong> ${escapeHtml(sampleName)}`;
+      const btn = document.getElementById('email-analyze-btn');
+      if (btn) { btn.innerText = "Analyzing Sample..."; btn.disabled = true; }
 
       try {
         const res = await fetch(`/api/sample/${sampleName}`);
-        if (!res.ok) throw new Error("Failed to load sample");
+        if (!res.ok) throw new Error(`Sample analysis failed with HTTP ${res.status}`);
         const data = await res.json();
         renderAnalysisResults(data, sampleName, true);
       } catch (err) {
         alert("Error loading sample: " + err.message);
       } finally {
-        document.getElementById('analyze-btn').innerText = "Run Forensic Triage & Scoring";
-        document.getElementById('analyze-btn').disabled = false;
+        if (btn) { btn.innerText = "Run Forensic Triage & Scoring"; btn.disabled = false; }
       }
     }
 
-    async function executeAnalysis() {
-      const sampleSelect = document.getElementById('sample-select').value;
-      if (sampleSelect) {
-        return loadCorpusSample(sampleSelect);
+    async function executeEmailAnalysis() {
+      if (!currentEvidenceFile && !currentSampleName) {
+        alert("Please select an evidence file or choose a forensic sample.");
+        return;
       }
-      if (!currentEvidenceFile) {
-        alert("Please select or drop an evidence file (.eml, .msg, .mbox) first.");
+      if (currentSampleName) {
+        loadCorpusSample(currentSampleName);
         return;
       }
 
-      const formData = new FormData();
-      formData.append("file", currentEvidenceFile);
-      formData.append("case_id", document.getElementById('case-id').value);
-      formData.append("examiner", document.getElementById('examiner-name').value);
+      const btn = document.getElementById('email-analyze-btn');
+      if (btn) { btn.innerText = "Processing Evidence..."; btn.disabled = true; }
 
-      document.getElementById('analyze-btn').innerText = "Analyzing Evidence...";
-      document.getElementById('analyze-btn').disabled = true;
+      const formData = new FormData();
+      formData.append('file', currentEvidenceFile);
+      formData.append('case_id', caseIdInput ? caseIdInput.value : 'CASE-2026');
+      formData.append('examiner', examinerInput ? examinerInput.value : 'Examiner');
 
       try {
-        const res = await fetch("/api/analyze", {
-          method: "POST",
-          body: formData,
-        });
+        const res = await fetch('/api/analyze', { method: 'POST', body: formData });
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || "Analysis failed");
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || `Analysis failed with HTTP ${res.status}`);
         }
         const data = await res.json();
         renderAnalysisResults(data, null, true);
       } catch (err) {
-        alert("Forensic Analysis Error: " + err.message);
+        alert("Analysis error: " + err.message);
       } finally {
-        document.getElementById('analyze-btn').innerText = "Run Forensic Triage & Scoring";
-        document.getElementById('analyze-btn').disabled = false;
+        if (btn) { btn.innerText = "Run Forensic Triage & Scoring"; btn.disabled = false; }
       }
     }
 
-    function renderAnalysisResults(data, sampleName = null, shouldSave = true) {
+    function renderAnalysisResults(data, sampleName, saveToStorage = true) {
       currentAnalysisData = data;
-      const email = data.email || data;
-      const risk = data.risk_report || {};
-
-      if (shouldSave) {
+      if (saveToStorage) {
         try {
           localStorage.setItem('eft_last_analysis', JSON.stringify(data));
-          if (sampleName) {
-            localStorage.setItem('eft_last_sample', sampleName);
-          } else {
-            localStorage.removeItem('eft_last_sample');
-          }
-          if (caseIdInput) localStorage.setItem('eft_case_id', caseIdInput.value);
-          if (examinerInput) localStorage.setItem('eft_examiner_name', examinerInput.value);
-        } catch (e) {
-          console.warn("Could not save session to localStorage", e);
-        }
+          if (sampleName) localStorage.setItem('eft_last_sample', sampleName);
+          else localStorage.removeItem('eft_last_sample');
+        } catch (e) {}
       }
 
-      if (resetBtn) resetBtn.style.display = 'inline-block';
+      const resultsSection = document.getElementById('email-results-section');
+      if (resultsSection) resultsSection.style.display = 'flex';
+      if (emailResetBtn) emailResetBtn.style.display = 'inline-flex';
 
-      document.getElementById('results-section').style.display = 'flex';
+      const email = data.email || {};
+      const risk = data.risk_report || {};
+      const score = risk.composite_score !== undefined ? risk.composite_score : (risk.risk_score || 0);
 
-      // Risk Score & Level
-      const score = Math.round(risk.overall_score !== undefined ? risk.overall_score : (risk.composite_score || 0));
-      const level = (risk.risk_level || risk.threat_level || "CLEAN").toUpperCase();
-      document.getElementById('risk-score-val').innerText = score;
-      document.getElementById('risk-level-tag').innerText = level;
-      document.getElementById('confidence-val').innerText = `Confidence: ${Math.round((risk.confidence_score || 1.0) * 100)}%`;
-
+      document.getElementById('risk-score-val').innerText = Math.round(score);
       const scoreCircle = document.getElementById('score-circle');
-      let color = "var(--risk-benign)";
-      if (level.includes("CRITICAL")) color = "var(--risk-critical)";
-      else if (level.includes("HIGH")) color = "var(--risk-high)";
-      else if (level.includes("MEDIUM")) color = "var(--risk-medium)";
-      else if (level.includes("LOW")) color = "var(--risk-low)";
-      scoreCircle.style.borderColor = color;
-      document.getElementById('risk-level-tag').style.color = color;
+      const riskTag = document.getElementById('risk-level-tag');
 
-      // Summary
+      let scoreColor = 'var(--risk-benign)';
+      let tagText = 'BENIGN';
+
+      if (score >= 75) { scoreColor = 'var(--risk-critical)'; tagText = 'CRITICAL'; }
+      else if (score >= 50) { scoreColor = 'var(--risk-high)'; tagText = 'HIGH'; }
+      else if (score >= 25) { scoreColor = 'var(--risk-medium)'; tagText = 'MEDIUM'; }
+      else if (score >= 10) { scoreColor = 'var(--risk-low)'; tagText = 'LOW'; }
+
+      if (scoreCircle) scoreCircle.style.borderColor = scoreColor;
+      if (riskTag) { riskTag.innerText = tagText; riskTag.style.color = scoreColor; }
+
+      const conf = risk.confidence !== undefined ? Math.round(risk.confidence * 100) : 100;
+      document.getElementById('confidence-val').innerText = `Confidence: ${conf}%`;
+
       document.getElementById('res-subject').innerText = email.subject || "(No Subject)";
-      document.getElementById('res-from').innerText = email.from_address || email.sender || email.from || "-";
-      
-      let toDisplay = "-";
-      if (email.to_addresses && email.to_addresses.length > 0) {
-        toDisplay = email.to_addresses.join(", ");
-      } else if (email.recipients && email.recipients.length > 0) {
-        toDisplay = email.recipients.join(", ");
-      } else if (email.to) {
-        toDisplay = email.to;
-      }
-      document.getElementById('res-to').innerText = toDisplay;
-      
-      const shaValue = data.sha256 || (email.source_file && email.source_file.hashes ? email.source_file.hashes.sha256 : null) || email.sha256 || "-";
-      document.getElementById('res-sha256').innerText = shaValue;
+      document.getElementById('res-from').innerText = email.sender ? `${email.sender.display_name || ''} <${email.sender.address || ''}>` : "-";
+      document.getElementById('res-to').innerText = (email.recipients && email.recipients.length > 0) ? email.recipients.map(r => r.address).join(', ') : "-";
+      document.getElementById('res-sha256').innerText = data.sha256 || (data.hashes ? data.hashes.sha256 : "-");
 
-      // Critical alerts / Risk factors
-      const alertsContainer = document.getElementById('critical-alerts-container');
-      alertsContainer.innerHTML = "";
-      const factors = risk.top_risk_factors || risk.factors || [];
-      factors.forEach(factor => {
-        const box = document.createElement('div');
-        box.className = 'alert-box';
-        const msg = typeof factor === 'string' ? factor : `${factor.name || factor.description} (+${factor.score_contribution || 0} pts)`;
-        box.innerHTML = `<strong>ALERT:</strong> ${msg}`;
-        alertsContainer.appendChild(box);
+      renderCriticalAlerts(risk.findings || risk.contributing_factors || []);
+      renderAuthTab(email.auth_results || {});
+      renderTransitTab(email.transit_route || []);
+      renderUrlsTab(email.extracted_urls || []);
+      renderAttachmentsTab(email.attachments || []);
+      renderBECTab(email.bec_signals || {}, risk.findings || []);
+      renderTimelineTab(email.evidence_timeline || []);
+      renderRawTab(email.headers || {}, email.body_plain || email.body_html || "");
+      renderEmailSenderOSINT(email.sender ? email.sender.address : null);
+    }
+
+    function renderCriticalAlerts(findings) {
+      const container = document.getElementById('critical-alerts-container');
+      if (!container) return;
+      container.innerHTML = "";
+      const criticals = findings.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH' || (f.weight && f.weight >= 20));
+      if (criticals.length === 0) return;
+
+      criticals.forEach(f => {
+        const div = document.createElement('div');
+        div.className = 'alert-box';
+        const title = f.name || f.indicator_type || 'Threat Finding';
+        const desc = f.description || f.detail || '';
+        div.innerHTML = `<strong>[!] ${escapeHtml(title)}:</strong> ${escapeHtml(desc)}`;
+        container.appendChild(div);
       });
-
-      // Render Tabs
-      renderAuthTab(email.authentication_report || email.authentication_results);
-      renderTransitTab(email.transit_route);
-      renderUrlsTab(email.url_report || email.url_threat_report);
-      renderAttachmentsTab(email.attachment_threat_report, email.extracted_attachments || email.attachments);
-      renderBECTab(email.bec_report);
-      renderTimelineTab(email.timeline_report);
-      renderEmailSenderOSINT(email.from_address || email.sender || email.from);
-      renderRawTab(email);
     }
 
     function renderAuthTab(auth) {
       const tbody = document.getElementById('auth-table-body');
+      if (!tbody) return;
       tbody.innerHTML = "";
-      if (!auth) {
-        tbody.innerHTML = "<tr><td colspan='4'>No authentication records found.</td></tr>";
-        return;
-      }
 
-      const rows = [];
-      
-      // SPF
-      if (auth.spf) {
-        rows.push({
-          proto: "SPF",
-          res: auth.spf.status || "none",
-          domain: auth.spf.mail_from_domain || auth.spf.sender_ip || "-",
-          details: auth.spf.details || `Sender IP: ${auth.spf.sender_ip || 'N/A'}, Aligned: ${auth.spf.is_aligned}`
-        });
-      } else {
-        rows.push({ proto: "SPF", res: auth.spf_result || "none", domain: auth.spf_domain || "-", details: auth.spf_details || "-" });
-      }
+      const spf = auth.spf || {};
+      const spfVerdict = (spf.result || 'none').toUpperCase();
+      const spfPass = spfVerdict === 'PASS';
+      const spfRow = `<tr>
+        <td><strong>SPF</strong></td>
+        <td><span class="auth-badge ${spfPass ? 'auth-pass' : 'auth-fail'}">${spfVerdict}</span></td>
+        <td>${escapeHtml(spf.domain || '-')}</td>
+        <td>${escapeHtml(spf.details || spf.raw_header || 'No record')}</td>
+      </tr>`;
 
-      // DKIM
-      if (auth.dkim_signatures && auth.dkim_signatures.length > 0) {
-        auth.dkim_signatures.forEach((dkim, idx) => {
-          rows.push({
-            proto: `DKIM #${idx + 1}`,
-            res: dkim.status || "none",
-            domain: dkim.domain ? `${dkim.domain} (s=${dkim.selector || '*'})` : "-",
-            details: dkim.details || `Algorithm: ${dkim.algorithm || 'rsa-sha256'}, Aligned: ${dkim.is_aligned}`
-          });
-        });
-      } else {
-        rows.push({ proto: "DKIM", res: auth.dkim_result || "none", domain: auth.dkim_domain || "-", details: auth.dkim_details || "-" });
-      }
+      const dkim = auth.dkim || {};
+      const dkimVerdict = (dkim.result || 'none').toUpperCase();
+      const dkimPass = dkimVerdict === 'PASS';
+      const dkimRow = `<tr>
+        <td><strong>DKIM</strong></td>
+        <td><span class="auth-badge ${dkimPass ? 'auth-pass' : 'auth-fail'}">${dkimVerdict}</span></td>
+        <td>${escapeHtml(dkim.domain || '-')}${dkim.selector ? ' (s=' + escapeHtml(dkim.selector) + ')' : ''}</td>
+        <td>${escapeHtml(dkim.details || dkim.signature_header || 'No signature')}</td>
+      </tr>`;
 
-      // DMARC
-      if (auth.dmarc) {
-        rows.push({
-          proto: "DMARC",
-          res: auth.dmarc.status || "none",
-          domain: auth.dmarc.header_from_domain || "-",
-          details: auth.dmarc.details || `Policy: ${auth.dmarc.policy || 'none'}, Disposition: ${auth.dmarc.disposition || 'none'}`
-        });
-      } else {
-        rows.push({ proto: "DMARC", res: auth.dmarc_result || "none", domain: auth.dmarc_domain || "-", details: auth.dmarc_details || "-" });
-      }
+      const dmarc = auth.dmarc || {};
+      const dmarcVerdict = (dmarc.result || 'none').toUpperCase();
+      const dmarcPass = dmarcVerdict === 'PASS';
+      const dmarcRow = `<tr>
+        <td><strong>DMARC</strong></td>
+        <td><span class="auth-badge ${dmarcPass ? 'auth-pass' : 'auth-fail'}">${dmarcVerdict}</span></td>
+        <td>${escapeHtml(dmarc.domain || '-')}</td>
+        <td>Policy: <code>${escapeHtml(dmarc.policy || 'none')}</code> | Alignment: ${escapeHtml(dmarc.alignment || 'none')}</td>
+      </tr>`;
 
-      // ARC
-      if (auth.arc) {
-        rows.push({
-          proto: "ARC",
-          res: auth.arc.is_valid ? "pass" : (auth.arc.arc_seal_status || "none"),
-          domain: auth.arc.instance_count ? `${auth.arc.instance_count} hop(s)` : "-",
-          details: auth.arc.details || `Seal: ${auth.arc.arc_seal_status || 'none'}, Valid: ${auth.arc.is_valid}`
-        });
-      } else {
-        rows.push({ proto: "ARC", res: auth.arc_result || "none", domain: "-", details: auth.arc_details || "-" });
-      }
-
-      rows.forEach(r => {
-        const tr = document.createElement('tr');
-        const badgeClass = (r.res || '').toLowerCase() === 'pass' ? 'auth-pass' : ((r.res || '').toLowerCase().includes('fail') ? 'auth-fail' : 'auth-none');
-        tr.innerHTML = `
-          <td><strong>${r.proto}</strong></td>
-          <td><span class="auth-badge ${badgeClass}">${(r.res || 'NONE').toUpperCase()}</span></td>
-          <td>${r.domain || '-'}</td>
-          <td>${r.details || '-'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
+      tbody.innerHTML = spfRow + dkimRow + dmarcRow;
     }
 
-    function renderTransitTab(transit) {
+    function renderTransitTab(hops) {
       const tbody = document.getElementById('transit-table-body');
+      if (!tbody) return;
       tbody.innerHTML = "";
-      if (!transit || !transit.hops || transit.hops.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='6'>No transit hops reconstructed.</td></tr>";
-        return;
+
+      if (hops.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='6' style='color:var(--text-muted); text-align:center;'>No transit hops parsed.</td></tr>";
+      } else {
+        hops.forEach((hop, idx) => {
+          const tr = document.createElement('tr');
+          const isTor = hop.is_tor || (hop.anomalies && hop.anomalies.some(a => a.toLowerCase().includes('tor')));
+          const geoStr = `${hop.geoip ? hop.geoip.country || '' : ''} ${hop.geoip ? hop.geoip.asn || '' : ''}`.trim() || 'Internal/Private';
+          tr.innerHTML = `
+            <td>#${idx + 1}</td>
+            <td><code>${escapeHtml(hop.from_ip || '-')}</code><br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(hop.from_host || '')}</span></td>
+            <td>${escapeHtml(hop.by_host || '-')}</td>
+            <td>${escapeHtml(geoStr)}</td>
+            <td>${hop.delay_seconds !== undefined ? hop.delay_seconds + 's' : '-'}</td>
+            <td>${isTor ? '<span class="auth-badge auth-fail">TOR RELAY</span>' : (hop.anomalies && hop.anomalies.length > 0 ? '<span class="auth-badge auth-fail">' + escapeHtml(hop.anomalies.join(', ')) + '</span>' : '<span style="color:var(--text-muted);">None</span>')}</td>
+          `;
+          tbody.appendChild(tr);
+        });
       }
 
-      transit.hops.forEach(h => {
-        const tr = document.createElement('tr');
-        const net = h.network_intelligence || {};
-        const geoStr = [net.city, net.country].filter(Boolean).join(", ") || "Unknown";
-        tr.innerHTML = `
-          <td>${h.hop_number}</td>
-          <td><code>${h.from_ip || '-'}</code><br><small style="color:var(--text-muted)">${h.from_host || ''}</small></td>
-          <td>${h.by_host || '-'}</td>
-          <td>${geoStr} <br><small style="color:var(--text-muted)">ASN: ${net.asn || 'N/A'}</small></td>
-          <td>${h.delay_seconds !== null && h.delay_seconds !== undefined ? h.delay_seconds + 's' : '-'}</td>
-          <td>${(h.threat_tags || []).join(", ") || '<span style="color:var(--accent-emerald)">Clean</span>'}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      // Load SVG map dynamically from API
       if (currentAnalysisData) {
-        fetch("/api/map", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        fetch('/api/map', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(currentAnalysisData)
-        })
-        .then(res => res.text())
-        .then(svg => {
-          document.getElementById('svg-map-container').innerHTML = svg;
-        })
-        .catch(() => {
-          document.getElementById('svg-map-container').innerHTML = "<div style='color:var(--text-muted); text-align:center;'>Transit map rendered via hops table.</div>";
-        });
+        }).then(r => r.text()).then(svg => {
+          const mapContainer = document.getElementById('svg-map-container');
+          if (mapContainer) mapContainer.innerHTML = svg;
+        }).catch(() => {});
       }
     }
 
-    function renderUrlsTab(urlReport) {
+    function renderUrlsTab(urls) {
       const tbody = document.getElementById('urls-table-body');
+      if (!tbody) return;
       tbody.innerHTML = "";
-      const urls = (urlReport && urlReport.extracted_urls) ? urlReport.extracted_urls : [];
+
       if (urls.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='4'>No hyperlinks extracted from message.</td></tr>";
+        tbody.innerHTML = "<tr><td colspan='4' style='color:var(--text-muted); text-align:center;'>No URLs extracted from message body.</td></tr>";
         return;
       }
 
       urls.forEach(u => {
         const tr = document.createElement('tr');
-        const flags = [];
-        if (u.is_punycode) flags.push("Punycode");
-        if (u.is_homograph) flags.push("Homograph/Typosquat");
-        if (u.is_suspicious_tld) flags.push("Suspicious TLD");
-        if (u.ip_in_url) flags.push("IP in Host");
-        if (u.threat_flags && u.threat_flags.length > 0) flags.push(...u.threat_flags);
-
+        const score = u.risk_score || 0;
+        let badgeClass = score >= 50 ? 'auth-fail' : (score >= 20 ? 'auth-none' : 'auth-pass');
         tr.innerHTML = `
-          <td><code>${u.defanged_url || u.url || '-'}</code></td>
-          <td>${u.domain || '-'}</td>
-          <td><strong>${u.risk_score || 0}</strong> / 100</td>
-          <td>${flags.length > 0 ? flags.join(", ") : '<span style="color:var(--accent-emerald)">Clean</span>'}</td>
+          <td><code>${escapeHtml(u.defanged_url || u.url)}</code></td>
+          <td>${escapeHtml(u.domain || '-')}</td>
+          <td><span class="auth-badge ${badgeClass}">${score}/100</span></td>
+          <td>${u.flags && u.flags.length > 0 ? escapeHtml(u.flags.join(', ')) : '<span style="color:var(--text-muted);">Clean</span>'}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function renderAttachmentsTab(attReport, rawAttachments) {
+    function renderAttachmentsTab(attachments) {
       const tbody = document.getElementById('attachments-table-body');
+      if (!tbody) return;
       tbody.innerHTML = "";
-      
-      const analyses = (attReport && attReport.attachment_analyses) ? attReport.attachment_analyses : [];
-      const items = analyses.length > 0 ? analyses : (rawAttachments || []);
 
-      if (items.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='5'>No attachments present in evidence.</td></tr>";
+      if (attachments.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='5' style='color:var(--text-muted); text-align:center;'>No attachments found in email.</td></tr>";
         return;
       }
 
-      items.forEach(item => {
+      attachments.forEach(att => {
         const tr = document.createElement('tr');
-        const meta = item.attachment || item;
-        const fn = meta.filename || "unnamed_attachment";
-        const mime = (item.file_type_inspection ? item.file_type_inspection.detected_mime_type : null) || meta.detected_mime_type || meta.declared_mime_type || meta.content_type || "-";
-        const size = meta.size_bytes ? (meta.size_bytes / 1024).toFixed(1) + " KB" : "-";
-        const sha = (meta.hashes ? meta.hashes.sha256 : null) || meta.sha256_hash || "-";
-        const findings = (item.flags && item.flags.length > 0) ? item.flags.join(", ") : (item.threat_level || '<span style="color:var(--accent-emerald)">Clean</span>');
-
+        const findings = att.threat_findings || [];
+        const findingsStr = findings.length > 0 ? `<span class="auth-badge auth-fail">${escapeHtml(findings.join(', '))}</span>` : '<span style="color:var(--text-muted);">Clean</span>';
         tr.innerHTML = `
-          <td><strong>${fn}</strong></td>
-          <td>${mime}</td>
-          <td>${size}</td>
-          <td><code style="font-size:0.75rem">${sha}</code></td>
-          <td>${findings}</td>
+          <td><strong>${escapeHtml(att.filename || 'attachment.bin')}</strong></td>
+          <td><code>${escapeHtml(att.mime_type || 'application/octet-stream')}</code></td>
+          <td>${att.size_bytes ? (att.size_bytes / 1024).toFixed(1) + ' KB' : '-'}</td>
+          <td><code style="font-size:0.75rem;">${escapeHtml(att.sha256 || '-')}</code></td>
+          <td>${findingsStr}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function renderBECTab(bec) {
+    function renderBECTab(bec, findings) {
       const container = document.getElementById('bec-findings-container');
-      container.innerHTML = "";
-      if (!bec || !bec.indicators || bec.indicators.length === 0) {
-        container.innerHTML = "<p style='color:var(--text-muted)'>Zero BEC or executive impersonation anomalies detected.</p>";
-        return;
-      }
+      if (!container) return;
 
-      bec.indicators.forEach(ind => {
-        const div = document.createElement('div');
-        div.className = 'stat-box';
-        div.style.marginBottom = '0.75rem';
-        div.innerHTML = `
-          <div class="title" style="color:var(--risk-high)">${ind.category || 'BEC INDICATOR'} (Severity: ${ind.severity})</div>
-          <div style="font-size:0.95rem; font-weight:600; margin:0.25rem 0;">${ind.title || ind.description}</div>
-          <div style="font-size:0.8rem; color:var(--text-secondary);">${ind.evidence_context || ''}</div>
-        `;
-        container.appendChild(div);
-      });
+      const becFindings = findings.filter(f => (f.category && f.category.toLowerCase().includes('bec')) || (f.name && f.name.toLowerCase().includes('bec')) || (f.indicator_type && f.indicator_type.includes('BEC')));
+      
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+          <div class="stat-box">
+            <div class="title">Impersonation Signals</div>
+            <div class="value">${bec.is_impersonation ? '<span style="color:var(--risk-critical)">DETECTED</span>' : 'None'}</div>
+          </div>
+          <div class="stat-box">
+            <div class="title">Urgency & Financial Keywords</div>
+            <div class="value">${bec.has_financial_urgency ? '<span style="color:var(--risk-high)">HIGH URGENCY</span>' : 'Normal'}</div>
+          </div>
+          <div class="stat-box">
+            <div class="title">Lookalike / Display Name Spoof</div>
+            <div class="value">${bec.display_name_spoof ? '<span style="color:var(--risk-critical)">YES</span>' : 'No'}</div>
+          </div>
+        </div>
+      `;
+
+      if (becFindings.length > 0) {
+        html += `<div class="table-container"><table><thead><tr><th>Signal</th><th>Severity</th><th>Details</th></tr></thead><tbody>`;
+        becFindings.forEach(f => {
+          html += `<tr><td><strong>${escapeHtml(f.name || f.indicator_type)}</strong></td><td><span class="auth-badge auth-fail">${escapeHtml(f.severity || 'HIGH')}</span></td><td>${escapeHtml(f.description || f.detail)}</td></tr>`;
+        });
+        html += `</tbody></table></div>`;
+      } else {
+        html += `<p style="color:var(--text-muted); text-align:center; padding: 1rem;">No explicit BEC impersonation patterns triggered.</p>`;
+      }
+      container.innerHTML = html;
     }
 
-    function renderTimelineTab(timeline) {
+    function renderTimelineTab(events) {
       const tbody = document.getElementById('timeline-table-body');
+      if (!tbody) return;
       tbody.innerHTML = "";
-      if (!timeline || !timeline.events || timeline.events.length === 0) {
-        tbody.innerHTML = "<tr><td colspan='4'>No timeline events available.</td></tr>";
+
+      if (events.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4' style='color:var(--text-muted); text-align:center;'>No timeline events.</td></tr>";
         return;
       }
 
-      timeline.events.forEach(e => {
+      events.forEach(ev => {
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><code>${e.timestamp_utc || '-'}</code></td>
-          <td><strong>${e.event_type}</strong></td>
-          <td>${e.source_entity || '-'}</td>
-          <td>${e.description}</td>
+          <td><code>${escapeHtml(ev.timestamp || '-')}</code></td>
+          <td><strong>${escapeHtml(ev.event_type || 'Event')}</strong></td>
+          <td>${escapeHtml(ev.source || '-')}</td>
+          <td>${escapeHtml(ev.description || '')}</td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    function renderRawTab(email) {
-      const headersViewer = document.getElementById('raw-headers-viewer');
-      const bodyViewer = document.getElementById('raw-body-viewer');
-
-      let headersStr = "";
-      (email.ordered_headers || []).forEach(h => {
-        headersStr += `${h[0]}: ${h[1]}\n`;
-      });
-      headersViewer.innerText = headersStr || "(No header data)";
-      bodyViewer.innerText = email.body_plain || email.body_html || "(Empty body)";
-    }
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
-      const targetBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick')?.includes(`'${tabId}'`));
-      if (targetBtn) targetBtn.classList.add('active');
-      const targetContent = document.getElementById('tab-' + tabId);
-      if (targetContent) targetContent.classList.add('active');
-      
-      try {
-        localStorage.setItem('eft_active_tab', tabId);
-      } catch (e) {}
-    }
-
-    async function exportReport(format) {
-      if (!currentAnalysisData) return;
-      try {
-        const res = await fetch(`/api/export/${format}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(currentAnalysisData)
-        });
-        if (!res.ok) throw new Error("Export failed");
-        const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const ext = format === 'pdf' ? 'pdf' : (format === 'stix' ? 'stix2.json' : (format === 'csv' ? 'csv' : 'json'));
-        a.download = `forensic_report_${Date.now()}.${ext}`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      } catch (err) {
-        alert("Export Error: " + err.message);
-      }
-    }
-
-    function escapeHtml(str) {
-      if (!str) return "";
-      const div = document.createElement('div');
-      div.innerText = str;
-      return div.innerHTML;
-    }
-
-    // Module Switcher Mode Logic
-    function switchMainMode(mode) {
-      const emailBtn = document.getElementById('btn-mode-email');
-      const osintBtn = document.getElementById('btn-mode-osint');
-      const emailContainer = document.getElementById('email-mode-container');
-      const osintContainer = document.getElementById('osint-mode-container');
-
-      if (mode === 'osint') {
-        emailBtn.classList.remove('active');
-        osintBtn.classList.add('active');
-        emailContainer.style.display = 'none';
-        osintContainer.style.display = 'flex';
-        try { localStorage.setItem('eft_main_mode', 'osint'); } catch (e) {}
-      } else {
-        osintBtn.classList.remove('active');
-        emailBtn.classList.add('active');
-        osintContainer.style.display = 'none';
-        emailContainer.style.display = 'block';
-        try { localStorage.setItem('eft_main_mode', 'email'); } catch (e) {}
-      }
-    }
-
-    function setOSINTPreset(preset) {
-      const targetInput = document.getElementById('osint-target-input');
-      if (targetInput) {
-        targetInput.value = preset;
-        executeOSINTLookup();
-      }
-    }
-
-    let currentOSINTReport = null;
-
-    async function executeOSINTLookup() {
-      const targetInput = document.getElementById('osint-target-input');
-      const target = targetInput ? targetInput.value.trim() : "";
-      if (!target) {
-        alert("Please enter a domain or email address to inspect.");
-        return;
-      }
-
-      const offlineToggle = document.getElementById('osint-offline-toggle');
-      const offline = offlineToggle ? offlineToggle.checked : true;
-
-      const loadingState = document.getElementById('osint-loading-state');
-      const resultsContainer = document.getElementById('osint-results-container');
-      const submitBtn = document.getElementById('osint-submit-btn');
-
-      loadingState.style.display = 'block';
-      resultsContainer.style.display = 'none';
-      submitBtn.disabled = true;
-
-      try {
-        const res = await fetch('/api/osint/lookup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ target: target, offline: offline, dns_timeout: 3.0 })
-        });
-        if (!res.ok) {
-          const errData = await res.json();
-          throw new Error(errData.detail || "OSINT query failed");
+    function renderRawTab(headers, body) {
+      const hViewer = document.getElementById('raw-headers-viewer');
+      const bViewer = document.getElementById('raw-body-viewer');
+      if (hViewer) {
+        let hStr = "";
+        for (const [k, v] of Object.entries(headers)) {
+          if (Array.isArray(v)) v.forEach(item => { hStr += `${k}: ${item}\n`; });
+          else hStr += `${k}: ${v}\n`;
         }
-        const data = await res.json();
-        currentOSINTReport = data.report;
-        renderOSINTResults(currentOSINTReport);
-        try {
-          localStorage.setItem('eft_last_osint_target', target);
-          localStorage.setItem('eft_last_osint_report', JSON.stringify(currentOSINTReport));
-        } catch (e) {}
-      } catch (err) {
-        alert("OSINT Inspector Error: " + err.message);
-      } finally {
-        loadingState.style.display = 'none';
-        submitBtn.disabled = false;
+        hViewer.innerText = hStr || "(No headers available)";
       }
-    }
-
-    function renderOSINTResults(report) {
-      if (!report) return;
-      const resultsContainer = document.getElementById('osint-results-container');
-      resultsContainer.style.display = 'flex';
-
-      // Score dial & risk tier
-      const score = report.reputation_score || 0;
-      document.getElementById('osint-score-val').innerText = score.toFixed(1);
-      
-      const scoreCircle = document.getElementById('osint-score-circle');
-      const riskTag = document.getElementById('osint-risk-tag');
-      
-      let scoreColor = "var(--risk-benign)";
-      let tagText = "CLEAN";
-      if (score >= 75) {
-        scoreColor = "var(--risk-critical)";
-        tagText = "CRITICAL";
-      } else if (score >= 50) {
-        scoreColor = "var(--risk-high)";
-        tagText = "HIGH RISK";
-      } else if (score >= 25) {
-        scoreColor = "var(--risk-medium)";
-        tagText = "SUSPICIOUS";
-      } else if (score >= 10) {
-        scoreColor = "var(--risk-low)";
-        tagText = "LOW RISK";
+      if (bViewer) {
+        bViewer.innerText = body || "(No body content available)";
       }
-      
-      scoreCircle.style.borderColor = scoreColor;
-      riskTag.innerText = tagText;
-      riskTag.style.color = scoreColor;
-
-      document.getElementById('osint-category-pill').innerText = report.category || "Corporate / Enterprise";
-
-      // Profile Identity
-      document.getElementById('osint-res-target').innerText = report.input_target || "-";
-      document.getElementById('osint-res-domain').innerText = report.analyzed_domain || "-";
-      document.getElementById('osint-res-regdomain').innerText = `${report.registered_domain || '-'} (TLD: .${report.tld || '-'})`;
-      
-      let punycodeStr = "No";
-      if (report.is_punycode) {
-        punycodeStr = `YES (${report.unicode_domain || 'IDN'})`;
-      }
-      document.getElementById('osint-res-punycode').innerHTML = report.is_punycode ? `<span style="color:var(--risk-high)">${escapeHtml(punycodeStr)}</span>` : punycodeStr;
-      
-      document.getElementById('osint-res-summary').innerText = report.summary || "";
-
-      // Brand Alert Panel
-      const brandAlert = document.getElementById('osint-brand-alert-box');
-      if (report.brand_risk && (report.brand_risk.has_homoglyphs || report.brand_risk.is_cousin_domain || report.brand_risk.similarity_score >= 0.75)) {
-        const br = report.brand_risk;
-        const hgStr = br.has_homoglyphs ? ` | Detected Homoglyphs: <code>${br.homoglyphs_detected.join(', ')}</code>` : '';
-        brandAlert.style.display = 'block';
-        brandAlert.innerHTML = `
-          <strong>[!] BRAND IMPERSONATION & TYPOSQUATTING ALERT:</strong> Target domain <code>${escapeHtml(report.analyzed_domain)}</code> mimics protected brand <strong>${escapeHtml(br.matched_brand_domain)}</strong> (Similarity: ${(br.similarity_score * 100).toFixed(1)}%, Levenshtein Distance: ${br.levenshtein_distance}${hgStr}).
-        `;
-      } else {
-        brandAlert.style.display = 'none';
-      }
-
-      // DNS Posture
-      const dns = report.dns_posture || {};
-
-      // 1. MX
-      const mxBadge = document.getElementById('osint-badge-mx');
-      const mxContent = document.getElementById('osint-mx-content');
-      if (dns.has_mx && dns.mx_records && dns.mx_records.length > 0) {
-        mxBadge.className = "osint-tag osint-tag-pass";
-        mxBadge.innerText = `${dns.mx_records.length} CONFIGURED`;
-        const mxList = dns.mx_records.map(m => `<div><code>${escapeHtml(m.host || m)}</code> <span style="font-size:0.75rem; color:var(--text-muted);">(Priority ${m.preference || 10})</span></div>`).join('');
-        mxContent.innerHTML = mxList;
-      } else {
-        mxBadge.className = "osint-tag osint-tag-fail";
-        mxBadge.innerText = "MISSING";
-        mxContent.innerHTML = "<span style='color:var(--risk-critical);'>No MX records published. Domain cannot receive standard inbound email.</span>";
-      }
-
-      // 2. SPF
-      const spfBadge = document.getElementById('osint-badge-spf');
-      const spfContent = document.getElementById('osint-spf-content');
-      const spf = dns.spf || {};
-      if (spf.raw_record || spf.qualifier !== 'missing') {
-        const isStrict = spf.strictness === 'STRICT' || spf.strictness === 'SOFTFAIL';
-        spfBadge.className = isStrict ? "osint-tag osint-tag-pass" : "osint-tag osint-tag-warn";
-        spfBadge.innerText = spf.strictness || "CONFIGURED";
-        spfContent.innerHTML = `
-          <div><strong>Qualifier:</strong> <code>${escapeHtml(spf.qualifier || 'none')}</code></div>
-          <div style="margin-top:0.35rem;"><code>${escapeHtml(spf.raw_record || '')}</code></div>
-          ${spf.warnings && spf.warnings.length > 0 ? '<div style="color:var(--risk-medium); margin-top:0.35rem; font-size:0.75rem;">' + spf.warnings.map(w => escapeHtml(w)).join('; ') + '</div>' : ''}
-        `;
-      } else {
-        spfBadge.className = "osint-tag osint-tag-fail";
-        spfBadge.innerText = "MISSING";
-        spfContent.innerHTML = "<span style='color:var(--risk-critical);'>No SPF record found in DNS TXT. Senders can easily forge this domain.</span>";
-      }
-
-      // 3. DMARC
-      const dmarcBadge = document.getElementById('osint-badge-dmarc');
-      const dmarcContent = document.getElementById('osint-dmarc-content');
-      const dmarc = dns.dmarc || {};
-      if (dmarc.raw_record || dmarc.policy !== 'missing') {
-        const isEnforcing = dmarc.enforcement === 'REJECT' || dmarc.enforcement === 'QUARANTINE';
-        dmarcBadge.className = isEnforcing ? "osint-tag osint-tag-pass" : (dmarc.enforcement === 'NONE' ? "osint-tag osint-tag-warn" : "osint-tag osint-tag-fail");
-        dmarcBadge.innerText = dmarc.enforcement || "CONFIGURED";
-        dmarcContent.innerHTML = `
-          <div><strong>Policy:</strong> <code>p=${escapeHtml(dmarc.policy || 'none')}</code> (pct: ${dmarc.percentage || 100}%)</div>
-          <div style="margin-top:0.35rem;"><code>${escapeHtml(dmarc.raw_record || '')}</code></div>
-          ${dmarc.rua_uris && dmarc.rua_uris.length > 0 ? '<div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.25rem;">RUA: ' + escapeHtml(dmarc.rua_uris.join(', ')) + '</div>' : ''}
-        `;
-      } else {
-        dmarcBadge.className = "osint-tag osint-tag-fail";
-        dmarcBadge.innerText = "MISSING";
-        dmarcContent.innerHTML = "<span style='color:var(--risk-critical);'>No DMARC policy found. Vulnerable to direct address spoofing.</span>";
-      }
-
-      // 4. DKIM & BIMI
-      const dkimBadge = document.getElementById('osint-badge-dkim');
-      const dkimContent = document.getElementById('osint-dkim-bimi-content');
-      const dkimList = dns.discovered_dkim || [];
-      const bimi = dns.bimi || {};
-      
-      if (dkimList.length > 0) {
-        dkimBadge.className = "osint-tag osint-tag-pass";
-        dkimBadge.innerText = `${dkimList.length} DISCOVERED`;
-      } else {
-        dkimBadge.className = "osint-tag osint-tag-warn";
-        dkimBadge.innerText = "0 DISCOVERED";
-      }
-
-      let dkimHtml = dkimList.length > 0 
-        ? dkimList.map(d => `<div><code>${escapeHtml(d.selector)}</code> <span style="font-size:0.75rem; color:var(--text-muted);">(${escapeHtml(d.key_type)})</span></div>`).join('')
-        : "<div style='color:var(--text-muted);'>No standard selector records found.</div>";
-
-      let bimiHtml = bimi.logo_url || bimi.raw_record
-        ? `<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border-color);"><strong>BIMI Logo:</strong> <code>${escapeHtml(bimi.logo_url || 'Configured')}</code></div>`
-        : `<div style="margin-top:0.5rem; padding-top:0.5rem; border-top:1px solid var(--border-color); color:var(--text-muted); font-size:0.75rem;">BIMI not published.</div>`;
-
-      dkimContent.innerHTML = dkimHtml + bimiHtml;
-
-      // Factors Table
-      const factorsTbody = document.getElementById('osint-factors-tbody');
-      factorsTbody.innerHTML = "";
-      const factors = report.risk_factors || [];
-      if (factors.length === 0) {
-        factorsTbody.innerHTML = "<tr><td colspan='4' style='color:var(--accent-emerald);'>Zero threat factors detected. Clean domain posture.</td></tr>";
-      } else {
-        factors.forEach(f => {
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td><span class="auth-badge ${f.severity === 'HIGH' || f.severity === 'CRITICAL' ? 'auth-fail' : 'auth-none'}">${escapeHtml(f.severity || 'INFO')}</span></td>
-            <td><strong>${escapeHtml(f.name || '')}</strong></td>
-            <td>+${(f.score_contribution || 0).toFixed(1)} pts</td>
-            <td>${escapeHtml(f.description || '')}</td>
-          `;
-          factorsTbody.appendChild(tr);
-        });
-      }
-
-      // Remediation Checklist
-      const remList = document.getElementById('osint-remediation-list');
-      remList.innerHTML = "";
-      const adviceItems = report.remediation_advice || [];
-      if (adviceItems.length === 0) {
-        remList.innerHTML = "<p style='color:var(--accent-emerald);'>Domain adheres to strict security baseline. Maintain regular DKIM key rotation.</p>";
-      } else {
-        adviceItems.forEach(item => {
-          const div = document.createElement('div');
-          div.style.padding = '0.5rem 0.75rem';
-          div.style.background = 'rgba(30, 41, 59, 0.6)';
-          div.style.borderRadius = '6px';
-          div.style.borderLeft = '3px solid var(--accent-cyan)';
-          div.style.fontSize = '0.85rem';
-          div.innerHTML = escapeHtml(item);
-          remList.appendChild(div);
-        });
-      }
-
-      // Raw JSON
-      document.getElementById('osint-raw-json-viewer').innerText = JSON.stringify(report, null, 2);
-    }
-
-    function switchOSINTDetailTab(tabId) {
-      document.querySelectorAll('#osint-results-container .tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('#osint-results-container .tab-content').forEach(c => c.classList.remove('active'));
-
-      const btn = document.getElementById('btn-osint-tab-' + tabId);
-      if (btn) btn.classList.add('active');
-      const content = document.getElementById('tab-osint-' + tabId);
-      if (content) content.classList.add('active');
-    }
-
-    function exportOSINTJSON() {
-      if (!currentOSINTReport) return;
-      const jsonStr = JSON.stringify(currentOSINTReport, null, 2);
-      const blob = new Blob([jsonStr], { type: "application/json" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `osint_report_${currentOSINTReport.analyzed_domain || 'domain'}_${Date.now()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
     }
 
     async function renderEmailSenderOSINT(fromAddress) {
@@ -1283,7 +1251,6 @@
         container.innerHTML = "<p style='color:var(--text-muted); text-align:center;'>No sender address available for domain OSINT inspection.</p>";
         return;
       }
-
       container.innerHTML = "<div style='text-align: center; color: var(--accent-cyan); padding: 1.5rem;'>Querying Sender Domain OSINT Intelligence for <code>" + escapeHtml(fromAddress) + "</code>...</div>";
 
       try {
@@ -1298,15 +1265,6 @@
 
         const scoreColor = report.reputation_score >= 75 ? 'var(--risk-critical)' : (report.reputation_score >= 50 ? 'var(--risk-high)' : (report.reputation_score >= 25 ? 'var(--risk-medium)' : 'var(--risk-benign)'));
         const dns = report.dns_posture || {};
-
-        let brandHtml = "";
-        if (report.brand_risk && (report.brand_risk.has_homoglyphs || report.brand_risk.is_cousin_domain || report.brand_risk.similarity_score >= 0.75)) {
-          brandHtml = `
-            <div class="alert-box" style="margin-top: 1rem;">
-              <strong>[!] LOOKALIKE BRAND ALERT:</strong> Domain <code>${escapeHtml(report.analyzed_domain)}</code> mimics protected brand <strong>${escapeHtml(report.brand_risk.matched_brand_domain)}</strong> (Similarity: ${(report.brand_risk.similarity_score*100).toFixed(1)}%, Levenshtein Distance: ${report.brand_risk.levenshtein_distance}).
-            </div>
-          `;
-        }
 
         container.innerHTML = `
           <div style="display: grid; grid-template-columns: 220px 1fr; gap: 1rem; margin-bottom: 1rem;">
@@ -1326,12 +1284,9 @@
               </div>
             </div>
           </div>
-          ${brandHtml}
           <div class="table-container" style="margin-top: 0.75rem;">
             <table>
-              <thead>
-                <tr><th>Mechanism</th><th>Status</th><th>Details</th></tr>
-              </thead>
+              <thead><tr><th>Mechanism</th><th>Status</th><th>Details</th></tr></thead>
               <tbody>
                 <tr>
                   <td><strong>MX Routing</strong></td>
@@ -1340,18 +1295,13 @@
                 </tr>
                 <tr>
                   <td><strong>SPF Posture</strong></td>
-                  <td><span class="auth-badge ${dns.spf && dns.spf.strictness === 'STRICT' ? 'auth-pass' : (dns.spf && dns.spf.strictness === 'SOFTFAIL' ? 'auth-pass' : 'auth-fail')}">${dns.spf ? dns.spf.strictness : 'MISSING'}</span></td>
+                  <td><span class="auth-badge ${dns.spf && (dns.spf.strictness === 'STRICT' || dns.spf.strictness === 'SOFTFAIL') ? 'auth-pass' : 'auth-fail'}">${dns.spf ? dns.spf.strictness : 'MISSING'}</span></td>
                   <td><code>${escapeHtml(dns.spf && dns.spf.raw_record ? dns.spf.raw_record : 'No SPF record published')}</code></td>
                 </tr>
                 <tr>
                   <td><strong>DMARC Enforcement</strong></td>
                   <td><span class="auth-badge ${dns.dmarc && (dns.dmarc.enforcement === 'REJECT' || dns.dmarc.enforcement === 'QUARANTINE') ? 'auth-pass' : 'auth-fail'}">${dns.dmarc ? dns.dmarc.enforcement : 'MISSING'}</span></td>
-                  <td><code>${escapeHtml(dns.dmarc && dns.dmarc.raw_record ? dns.dmarc.raw_record : 'No DMARC record published')}</code></td>
-                </tr>
-                <tr>
-                  <td><strong>DKIM Selectors</strong></td>
-                  <td><span class="auth-badge ${dns.discovered_dkim && dns.discovered_dkim.length > 0 ? 'auth-pass' : 'auth-none'}">${dns.discovered_dkim ? dns.discovered_dkim.length : 0} DISCOVERED</span></td>
-                  <td>${dns.discovered_dkim && dns.discovered_dkim.length > 0 ? dns.discovered_dkim.map(d => '<code>' + escapeHtml(d.selector) + '</code> (' + escapeHtml(d.key_type) + ')').join(', ') : 'No standard selectors discovered'}</td>
+                  <td><code>${escapeHtml(dns.dmarc && dns.dmarc.raw_record ? dns.dmarc.raw_record : 'No DMARC policy published')}</code></td>
                 </tr>
               </tbody>
             </table>
@@ -1362,7 +1312,805 @@
       }
     }
 
-    // Auto-restore session state on page load / refresh
+    function switchEmailTab(tabId) {
+      document.querySelectorAll('#ws-pane-email .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#ws-pane-email .tab-content').forEach(c => c.classList.remove('active'));
+
+      const btn = Array.from(document.querySelectorAll('#ws-pane-email .tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+      const pane = document.getElementById('tab-email-' + tabId);
+      if (pane) pane.classList.add('active');
+
+      try {
+        localStorage.setItem('eft_active_email_tab', tabId);
+      } catch (e) {}
+    }
+
+    async function exportReport(format) {
+      if (!currentAnalysisData) return;
+      try {
+        const payload = {
+          ...currentAnalysisData,
+          case_id: caseIdInput ? caseIdInput.value : 'CASE-2026',
+          examiner: examinerInput ? examinerInput.value : 'Examiner'
+        };
+        const res = await fetch(`/api/export/${format}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error("Export failed");
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `forensic_report_${format}_${Date.now()}.${format === 'stix' ? 'json' : format}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        alert("Export failed: " + err.message);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // WORKSPACE 2: FILE & BINARY INSPECTOR
+    // -------------------------------------------------------------------------
+    const fileDropzone = document.getElementById('file-dropzone');
+    const fileUploadInput = document.getElementById('file-upload-input');
+    const fileUploadLabel = document.getElementById('file-upload-label');
+
+    ['dragenter', 'dragover'].forEach(name => {
+      if (fileDropzone) fileDropzone.addEventListener(name, (e) => { e.preventDefault(); fileDropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      if (fileDropzone) fileDropzone.addEventListener(name, (e) => { e.preventDefault(); fileDropzone.classList.remove('dragover'); });
+    });
+    if (fileDropzone) {
+      fileDropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handleFileArtifactSelect(e.dataTransfer.files[0]);
+      });
+    }
+    if (fileUploadInput) {
+      fileUploadInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleFileArtifactSelect(e.target.files[0]);
+      });
+    }
+
+    function handleFileArtifactSelect(file) {
+      selectedFileArtifact = file;
+      if (fileUploadLabel) fileUploadLabel.innerHTML = `<strong>Selected Artifact:</strong> ${escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+
+    async function executeFileAnalysis() {
+      if (!selectedFileArtifact) {
+        alert("Please select or drop a file artifact to inspect.");
+        return;
+      }
+      const btn = document.getElementById('file-analyze-btn');
+      if (btn) { btn.innerText = "Inspecting Artifact..."; btn.disabled = true; }
+
+      const formData = new FormData();
+      formData.append('file', selectedFileArtifact);
+
+      try {
+        const res = await fetch('/api/file/analyze', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`Inspection failed with HTTP ${res.status}`);
+        const data = await res.json();
+        renderFileResults(data, true);
+      } catch (err) {
+        alert("File inspection error: " + err.message);
+      } finally {
+        if (btn) { btn.innerText = "Inspect File Artifact"; btn.disabled = false; }
+      }
+    }
+
+    function renderFileResults(data, saveToStorage = true) {
+      currentFileReport = data;
+      if (saveToStorage) {
+        try { localStorage.setItem('eft_last_file_report', JSON.stringify(data)); } catch (e) {}
+      }
+
+      const results = document.getElementById('file-results-section');
+      if (results) results.style.display = 'flex';
+
+      document.getElementById('file-res-name').innerText = `${data.filename} (${(data.size_bytes / 1024).toFixed(1)} KB)`;
+      
+      const staticRep = data.static_report || {};
+      const artRep = data.artifact_report || {};
+      const metaRep = data.metadata_report || {};
+
+      document.getElementById('file-res-mime').innerText = `${artRep.mime_type || staticRep.file_type || 'Unknown'} (${artRep.file_magic || 'Binary'})`;
+      
+      const entropy = staticRep.entropy !== undefined ? staticRep.entropy : (artRep.entropy || 0);
+      let entropyColor = entropy > 7.2 ? 'var(--risk-critical)' : (entropy > 6.5 ? 'var(--risk-medium)' : 'var(--accent-emerald)');
+      document.getElementById('file-res-entropy').innerHTML = `<span style="color:${entropyColor}; font-weight:700;">${entropy.toFixed(3)} / 8.0</span> ${entropy > 7.2 ? '(Packed/Encrypted)' : '(Normal)'}`;
+      
+      document.getElementById('file-res-sha256').innerText = data.sha256 || (data.hashes ? data.hashes.sha256 : '-');
+
+      // Hashes table
+      const hashesTbody = document.getElementById('file-hashes-tbody');
+      if (hashesTbody && data.hashes) {
+        hashesTbody.innerHTML = Object.entries(data.hashes).map(([k, v]) => `<tr><td><strong>${k.toUpperCase()}</strong></td><td><code>${escapeHtml(v)}</code></td></tr>`).join('');
+      }
+
+      // Static content
+      const staticDiv = document.getElementById('file-static-content');
+      if (staticDiv) {
+        let html = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+            <div class="stat-box"><div class="title">Architecture / Format</div><div class="value">${escapeHtml(staticRep.architecture || staticRep.file_type || 'N/A')}</div></div>
+            <div class="stat-box"><div class="title">Sections Count</div><div class="value">${staticRep.sections ? staticRep.sections.length : 0}</div></div>
+            <div class="stat-box"><div class="title">Imported Libraries</div><div class="value">${staticRep.imported_dlls ? staticRep.imported_dlls.length : (staticRep.imports ? staticRep.imports.length : 0)}</div></div>
+          </div>
+        `;
+        if (staticRep.sections && staticRep.sections.length > 0) {
+          html += `
+            <h4 style="font-size: 0.85rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">Binary Sections & Entropy</h4>
+            <div class="table-container"><table><thead><tr><th>Section</th><th>Virtual Size</th><th>Raw Size</th><th>Entropy</th><th>Suspicious</th></tr></thead><tbody>
+          `;
+          staticRep.sections.forEach(s => {
+            html += `<tr><td><code>${escapeHtml(s.name || s.section_name)}</code></td><td>${s.virtual_size || '-'}</td><td>${s.raw_size || '-'}</td><td>${s.entropy ? s.entropy.toFixed(2) : '-'}</td><td>${s.is_suspicious ? '<span class="auth-badge auth-fail">YES</span>' : '<span style="color:var(--text-muted)">No</span>'}</td></tr>`;
+          });
+          html += `</tbody></table></div>`;
+        }
+        staticDiv.innerHTML = html;
+      }
+
+      // Metadata content
+      const metaDiv = document.getElementById('file-metadata-content');
+      if (metaDiv) {
+        const metaEntries = Object.entries(metaRep.metadata || metaRep.exif || {});
+        if (metaEntries.length > 0) {
+          metaDiv.innerHTML = `<div class="table-container"><table><thead><tr><th>Property</th><th>Extracted Value</th></tr></thead><tbody>` +
+            metaEntries.map(([k, v]) => `<tr><td><strong>${escapeHtml(k)}</strong></td><td><code>${escapeHtml(JSON.stringify(v))}</code></td></tr>`).join('') +
+            `</tbody></table></div>`;
+        } else {
+          metaDiv.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding: 1.5rem;">No EXIF / OLE document metadata found.</p>`;
+        }
+      }
+
+      // Raw json
+      document.getElementById('file-raw-json').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function switchFileTab(tabId) {
+      document.querySelectorAll('#ws-pane-file .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#ws-pane-file .tab-content').forEach(c => c.classList.remove('active'));
+
+      const btn = Array.from(document.querySelectorAll('#ws-pane-file .tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+      const pane = document.getElementById('tab-file-' + tabId);
+      if (pane) pane.classList.add('active');
+    }
+
+    function exportFileJSON() {
+      if (!currentFileReport) return;
+      const blob = new Blob([JSON.stringify(currentFileReport, null, 2)], { type: "application/json" });
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `file_report_${currentFileReport.filename || 'evidence'}_${Date.now()}.json`;
+      a.click();
+    }
+
+    // -------------------------------------------------------------------------
+    // WORKSPACE 3: OSINT & THREAT INTELLIGENCE
+    // -------------------------------------------------------------------------
+    function switchOSINTSubMode(mode) {
+      const domainForm = document.getElementById('osint-domain-form-box');
+      const ipForm = document.getElementById('osint-ip-form-box');
+      const btnDomain = document.getElementById('osint-subtab-btn-domain');
+      const btnIp = document.getElementById('osint-subtab-btn-ip');
+      const domainRes = document.getElementById('osint-domain-results');
+      const ipRes = document.getElementById('osint-ip-results');
+
+      if (mode === 'domain') {
+        if (domainForm) domainForm.style.display = 'block';
+        if (ipForm) ipForm.style.display = 'none';
+        if (btnDomain) btnDomain.classList.add('active');
+        if (btnIp) btnIp.classList.remove('active');
+        if (domainRes && currentOSINTReport) domainRes.style.display = 'flex';
+        if (ipRes) ipRes.style.display = 'none';
+      } else {
+        if (domainForm) domainForm.style.display = 'none';
+        if (ipForm) ipForm.style.display = 'block';
+        if (btnDomain) btnDomain.classList.remove('active');
+        if (btnIp) btnIp.classList.add('active');
+        if (domainRes) domainRes.style.display = 'none';
+        if (ipRes && currentIPReport) ipRes.style.display = 'flex';
+      }
+    }
+
+    function setOSINTPreset(val) {
+      const input = document.getElementById('osint-target-input');
+      if (input) { input.value = val; executeOSINTLookup(); }
+    }
+
+    function setIPPreset(val) {
+      const input = document.getElementById('osint-ip-input');
+      if (input) { input.value = val; executeIPLookup(); }
+    }
+
+    async function executeOSINTLookup() {
+      const targetInput = document.getElementById('osint-target-input');
+      const target = targetInput ? targetInput.value.trim() : "";
+      if (!target) { alert("Please enter a domain or email address to inspect."); return; }
+
+      const offlineToggle = document.getElementById('osint-offline-toggle');
+      const isOffline = offlineToggle ? offlineToggle.checked : true;
+      const btn = document.getElementById('osint-submit-btn');
+      if (btn) { btn.innerText = "Querying..."; btn.disabled = true; }
+
+      try {
+        const res = await fetch('/api/osint/lookup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ target: target, offline: isOffline, dns_timeout: 3.0 })
+        });
+        if (!res.ok) throw new Error(`OSINT query failed with HTTP ${res.status}`);
+        const data = await res.json();
+        renderOSINTResults(data.report, true);
+      } catch (err) {
+        alert("OSINT lookup error: " + err.message);
+      } finally {
+        if (btn) { btn.innerText = "Inspect Domain"; btn.disabled = false; }
+      }
+    }
+
+    function renderOSINTResults(report, saveToStorage = true) {
+      currentOSINTReport = report;
+      if (saveToStorage) {
+        try {
+          localStorage.setItem('eft_last_osint_report', JSON.stringify(report));
+          localStorage.setItem('eft_last_osint_target', report.input_target || '');
+        } catch (e) {}
+      }
+
+      const container = document.getElementById('osint-domain-results');
+      if (container) container.style.display = 'flex';
+
+      const score = report.reputation_score !== undefined ? report.reputation_score : 0;
+      document.getElementById('osint-score-val').innerText = Math.round(score);
+
+      const scoreCircle = document.getElementById('osint-score-circle');
+      const riskTag = document.getElementById('osint-risk-tag');
+
+      let scoreColor = 'var(--risk-benign)';
+      let tagText = 'CLEAN';
+
+      if (score >= 75) { scoreColor = 'var(--risk-critical)'; tagText = 'CRITICAL RISK'; }
+      else if (score >= 50) { scoreColor = 'var(--risk-high)'; tagText = 'HIGH RISK'; }
+      else if (score >= 25) { scoreColor = 'var(--risk-medium)'; tagText = 'MEDIUM RISK'; }
+      else if (score >= 10) { scoreColor = 'var(--risk-low)'; tagText = 'LOW RISK'; }
+
+      if (scoreCircle) scoreCircle.style.borderColor = scoreColor;
+      if (riskTag) { riskTag.innerText = tagText; riskTag.style.color = scoreColor; }
+
+      document.getElementById('osint-category-pill').innerText = report.category || "Corporate";
+      document.getElementById('osint-res-target').innerText = report.input_target || "-";
+      document.getElementById('osint-res-domain').innerText = report.analyzed_domain || "-";
+      document.getElementById('osint-res-regdomain').innerText = `${report.registered_domain || '-'} (TLD: .${report.tld || '-'})`;
+      document.getElementById('osint-res-punycode').innerText = report.is_punycode ? `YES (${report.unicode_domain})` : "No";
+      document.getElementById('osint-res-summary').innerText = report.summary || "";
+
+      // Brand alert
+      const brandBox = document.getElementById('osint-brand-alert-box');
+      if (brandBox && report.brand_risk && (report.brand_risk.has_homoglyphs || report.brand_risk.is_cousin_domain || report.brand_risk.similarity_score >= 0.75)) {
+        brandBox.style.display = 'block';
+        brandBox.innerHTML = `<strong>[!] BRAND IMPERSONATION ALERT:</strong> Domain <code>${escapeHtml(report.analyzed_domain)}</code> mimics <strong>${escapeHtml(report.brand_risk.matched_brand_domain)}</strong> (Similarity: ${(report.brand_risk.similarity_score * 100).toFixed(1)}%).`;
+      } else if (brandBox) {
+        brandBox.style.display = 'none';
+      }
+
+      // DNS Posture
+      const dns = report.dns_posture || {};
+      const mxBadge = document.getElementById('osint-badge-mx');
+      if (mxBadge) {
+        mxBadge.className = dns.has_mx ? "osint-tag osint-tag-pass" : "osint-tag osint-tag-fail";
+        mxBadge.innerText = dns.has_mx ? `${dns.mx_records ? dns.mx_records.length : 1} CONFIGURED` : "MISSING";
+      }
+      const mxContent = document.getElementById('osint-mx-content');
+      if (mxContent) {
+        mxContent.innerHTML = dns.has_mx && dns.mx_records ? dns.mx_records.map(m => `<div><code>${escapeHtml(m.host || m)}</code></div>`).join('') : '<span style="color:var(--risk-critical)">No MX records published</span>';
+      }
+
+      const spfBadge = document.getElementById('osint-badge-spf');
+      if (spfBadge) {
+        const strict = dns.spf && (dns.spf.strictness === 'STRICT' || dns.spf.strictness === 'SOFTFAIL');
+        spfBadge.className = strict ? "osint-tag osint-tag-pass" : "osint-tag osint-tag-warn";
+        spfBadge.innerText = dns.spf ? dns.spf.strictness : "MISSING";
+      }
+      const spfContent = document.getElementById('osint-spf-content');
+      if (spfContent) {
+        spfContent.innerHTML = dns.spf && dns.spf.raw_record ? `<code>${escapeHtml(dns.spf.raw_record)}</code>` : '<span style="color:var(--risk-critical)">No SPF record found</span>';
+      }
+
+      const dmarcBadge = document.getElementById('osint-badge-dmarc');
+      if (dmarcBadge) {
+        const enforcing = dns.dmarc && (dns.dmarc.enforcement === 'REJECT' || dns.dmarc.enforcement === 'QUARANTINE');
+        dmarcBadge.className = enforcing ? "osint-tag osint-tag-pass" : "osint-tag osint-tag-warn";
+        dmarcBadge.innerText = dns.dmarc ? dns.dmarc.enforcement : "MISSING";
+      }
+      const dmarcContent = document.getElementById('osint-dmarc-content');
+      if (dmarcContent) {
+        dmarcContent.innerHTML = dns.dmarc && dns.dmarc.raw_record ? `<code>${escapeHtml(dns.dmarc.raw_record)}</code>` : '<span style="color:var(--risk-critical)">No DMARC policy found</span>';
+      }
+
+      const dkimBadge = document.getElementById('osint-badge-dkim');
+      if (dkimBadge) {
+        const count = dns.discovered_dkim ? dns.discovered_dkim.length : 0;
+        dkimBadge.className = count > 0 ? "osint-tag osint-tag-pass" : "osint-tag osint-tag-warn";
+        dkimBadge.innerText = `${count} PROBED`;
+      }
+      const dkimContent = document.getElementById('osint-dkim-bimi-content');
+      if (dkimContent) {
+        const dkimList = dns.discovered_dkim || [];
+        dkimContent.innerHTML = dkimList.length > 0 ? dkimList.map(d => `<div><code>${escapeHtml(d.selector)}</code> (${escapeHtml(d.key_type)})</div>`).join('') : '<span style="color:var(--text-muted)">No standard selectors discovered</span>';
+      }
+
+      // Risk factors
+      const factorsTbody = document.getElementById('osint-factors-tbody');
+      if (factorsTbody) {
+        const factors = report.risk_factors || [];
+        factorsTbody.innerHTML = factors.length === 0 ? "<tr><td colspan='4' style='color:var(--accent-emerald)'>Zero risk factors detected. Clean domain posture.</td></tr>" :
+          factors.map(f => `<tr><td><span class="auth-badge ${f.severity === 'HIGH' || f.severity === 'CRITICAL' ? 'auth-fail' : 'auth-none'}">${escapeHtml(f.severity || 'INFO')}</span></td><td><strong>${escapeHtml(f.name)}</strong></td><td>+${(f.score_contribution || 0).toFixed(1)}</td><td>${escapeHtml(f.description)}</td></tr>`).join('');
+      }
+
+      // Remediation
+      const remList = document.getElementById('osint-remediation-list');
+      if (remList) {
+        const advice = report.remediation_advice || [];
+        remList.innerHTML = advice.length === 0 ? "<p style='color:var(--accent-emerald)'>Domain adheres to strict security baseline.</p>" :
+          advice.map(item => `<div style="padding:0.5rem 0.75rem; background:rgba(30,41,59,0.6); border-radius:6px; border-left:3px solid var(--accent-cyan); font-size:0.85rem;">${escapeHtml(item)}</div>`).join('');
+      }
+
+      document.getElementById('osint-raw-json-viewer').innerText = JSON.stringify(report, null, 2);
+    }
+
+    async function executeIPLookup() {
+      const ipInput = document.getElementById('osint-ip-input');
+      const ip = ipInput ? ipInput.value.trim() : "";
+      if (!ip) { alert("Please enter an IP address to lookup."); return; }
+
+      const btn = document.getElementById('ip-submit-btn');
+      if (btn) { btn.innerText = "Querying..."; btn.disabled = true; }
+
+      try {
+        const res = await fetch('/api/osint/ip', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ip: ip })
+        });
+        if (!res.ok) throw new Error(`IP lookup failed with HTTP ${res.status}`);
+        const data = await res.json();
+        renderIPResults(data, true);
+      } catch (err) {
+        alert("IP lookup error: " + err.message);
+      } finally {
+        if (btn) { btn.innerText = "Lookup IP"; btn.disabled = false; }
+      }
+    }
+
+    function renderIPResults(data, saveToStorage = true) {
+      currentIPReport = data;
+      if (saveToStorage) {
+        try {
+          localStorage.setItem('eft_last_ip_report', JSON.stringify(data));
+          localStorage.setItem('eft_last_ip_target', data.ip || '');
+        } catch (e) {}
+      }
+
+      const results = document.getElementById('osint-ip-results');
+      if (results) results.style.display = 'flex';
+
+      const intel = data.intelligence || {};
+      document.getElementById('ip-res-addr').innerText = data.ip || "-";
+      document.getElementById('ip-res-location').innerText = `${intel.country || 'Unknown'} (${intel.country_code || '--'}), ${intel.city || 'City'}`;
+      document.getElementById('ip-res-asn').innerText = `${intel.asn || 'ASN-'} — ${intel.org || intel.isp || 'Organization'}`;
+      
+      const isPrivate = data.is_private || intel.is_private;
+      document.getElementById('ip-res-type').innerHTML = isPrivate ? `<span class="auth-badge auth-fail">RFC 1918 PRIVATE / BOGON</span>` : `<span class="auth-badge auth-pass">PUBLIC ROUTABLE IP</span>`;
+      
+      document.getElementById('ip-raw-viewer').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function switchOSINTDetailTab(tabId) {
+      document.querySelectorAll('#ws-pane-osint .tab-btn').forEach(b => {
+        if (b.id && b.id.includes('subtab')) return;
+        b.classList.remove('active');
+      });
+      document.querySelectorAll('#osint-domain-results .tab-content').forEach(c => c.classList.remove('active'));
+
+      const pane = document.getElementById('tab-osint-' + tabId);
+      if (pane) pane.classList.add('active');
+    }
+
+    function exportOSINTJSON() {
+      if (!currentOSINTReport) return;
+      const blob = new Blob([JSON.stringify(currentOSINTReport, null, 2)], { type: "application/json" });
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `osint_report_${currentOSINTReport.analyzed_domain || 'domain'}_${Date.now()}.json`;
+      a.click();
+    }
+
+    function exportIPJSON() {
+      if (!currentIPReport) return;
+      const blob = new Blob([JSON.stringify(currentIPReport, null, 2)], { type: "application/json" });
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `ip_report_${currentIPReport.ip || 'ip'}_${Date.now()}.json`;
+      a.click();
+    }
+
+    // -------------------------------------------------------------------------
+    // WORKSPACE 4: NETWORK PCAP ANALYZER
+    // -------------------------------------------------------------------------
+    const pcapDropzone = document.getElementById('pcap-dropzone');
+    const pcapFileInput = document.getElementById('pcap-file-input');
+    const pcapFileLabel = document.getElementById('pcap-file-label');
+
+    ['dragenter', 'dragover'].forEach(name => {
+      if (pcapDropzone) pcapDropzone.addEventListener(name, (e) => { e.preventDefault(); pcapDropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      if (pcapDropzone) pcapDropzone.addEventListener(name, (e) => { e.preventDefault(); pcapDropzone.classList.remove('dragover'); });
+    });
+    if (pcapDropzone) {
+      pcapDropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handlePCAPFileSelect(e.dataTransfer.files[0]);
+      });
+    }
+    if (pcapFileInput) {
+      pcapFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handlePCAPFileSelect(e.target.files[0]);
+      });
+    }
+
+    function handlePCAPFileSelect(file) {
+      selectedPCAPFile = file;
+      if (pcapFileLabel) pcapFileLabel.innerHTML = `<strong>Selected Capture:</strong> ${escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+
+    async function executePCAPAnalysis() {
+      if (!selectedPCAPFile) { alert("Please select a PCAP file to analyze."); return; }
+      const btn = document.getElementById('pcap-analyze-btn');
+      if (btn) { btn.innerText = "Dissecting Capture..."; btn.disabled = true; }
+
+      const formData = new FormData();
+      formData.append('file', selectedPCAPFile);
+
+      try {
+        const res = await fetch('/api/pcap/analyze', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`PCAP analysis failed with HTTP ${res.status}`);
+        const data = await res.json();
+        renderPCAPResults(data, true);
+      } catch (err) {
+        alert("PCAP analysis error: " + err.message);
+      } finally {
+        if (btn) { btn.innerText = "Analyze Packet Capture"; btn.disabled = false; }
+      }
+    }
+
+    function renderPCAPResults(data, saveToStorage = true) {
+      currentPCAPReport = data;
+      if (saveToStorage) {
+        try { localStorage.setItem('eft_last_pcap_report', JSON.stringify(data)); } catch (e) {}
+      }
+
+      const results = document.getElementById('pcap-results-section');
+      if (results) results.style.display = 'flex';
+
+      const pcapRep = data.pcap_report || {};
+      const dnsRep = data.dns_report || {};
+      const credRep = data.credential_report || {};
+
+      document.getElementById('pcap-res-packets').innerText = pcapRep.total_packets || 0;
+      document.getElementById('pcap-res-dns').innerText = dnsRep.total_queries_analyzed || 0;
+      
+      const credCount = credRep.total_credentials_found || (credRep.credentials ? credRep.credentials.length : 0);
+      document.getElementById('pcap-res-creds').innerText = credCount;
+      
+      const exfilCount = dnsRep.total_threats_detected || (dnsRep.threats ? dnsRep.threats.length : 0);
+      document.getElementById('pcap-res-threats').innerText = exfilCount;
+
+      // Credentials table
+      const credsTbody = document.getElementById('pcap-creds-tbody');
+      if (credsTbody) {
+        const creds = credRep.credentials || [];
+        credsTbody.innerHTML = creds.length === 0 ? "<tr><td colspan='6' style='color:var(--text-muted); text-align:center;'>Zero cleartext credentials intercepted. Clean capture.</td></tr>" :
+          creds.map(c => `<tr><td><span class="auth-badge auth-fail">${escapeHtml(c.protocol || 'HTTP')}</span></td><td><code>${escapeHtml(c.source_ip || '')}:${c.source_port || ''}</code></td><td><code>${escapeHtml(c.dest_ip || '')}:${c.dest_port || ''}</code></td><td><strong>${escapeHtml(c.username || '-')}</strong></td><td><code style="color:var(--risk-critical)">${escapeHtml(c.password || c.token || '-')}</code></td><td>${escapeHtml(c.context || '')}</td></tr>`).join('');
+      }
+
+      // DNS threat content
+      const dnsDiv = document.getElementById('pcap-dns-content');
+      if (dnsDiv) {
+        const threats = dnsRep.threats || [];
+        if (threats.length > 0) {
+          dnsDiv.innerHTML = `<div class="table-container"><table><thead><tr><th>Detection</th><th>Domain / FQDN</th><th>Entropy / Signal</th><th>Description</th></tr></thead><tbody>` +
+            threats.map(t => `<tr><td><span class="auth-badge auth-fail">${escapeHtml(t.threat_type || 'DNS EXFIL')}</span></td><td><code>${escapeHtml(t.domain || t.query)}</code></td><td>${t.entropy ? t.entropy.toFixed(2) : '-'}</td><td>${escapeHtml(t.description || t.details)}</td></tr>`).join('') +
+            `</tbody></table></div>`;
+        } else {
+          dnsDiv.innerHTML = `<p style="color:var(--accent-emerald); text-align:center; padding: 1.5rem;">No DNS exfiltration, tunneling, or fast-flux domains detected.</p>`;
+        }
+      }
+
+      // Protocols content
+      const protoDiv = document.getElementById('pcap-protocols-content');
+      if (protoDiv) {
+        const flows = pcapRep.protocols || pcapRep.flows || [];
+        protoDiv.innerHTML = `<div class="raw-viewer">${escapeHtml(JSON.stringify(flows, null, 2))}</div>`;
+      }
+
+      document.getElementById('pcap-raw-json').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function switchPCAPTab(tabId) {
+      document.querySelectorAll('#ws-pane-pcap .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#ws-pane-pcap .tab-content').forEach(c => c.classList.remove('active'));
+
+      const btn = Array.from(document.querySelectorAll('#ws-pane-pcap .tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+      const pane = document.getElementById('tab-pcap-' + tabId);
+      if (pane) pane.classList.add('active');
+    }
+
+    function exportPCAPJSON() {
+      if (!currentPCAPReport) return;
+      const blob = new Blob([JSON.stringify(currentPCAPReport, null, 2)], { type: "application/json" });
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `pcap_report_${currentPCAPReport.filename || 'capture'}_${Date.now()}.json`;
+      a.click();
+    }
+
+    // -------------------------------------------------------------------------
+    // WORKSPACE 5: LOG & CLOUD CORRELATOR
+    // -------------------------------------------------------------------------
+    const logDropzone = document.getElementById('log-dropzone');
+    const logFileInput = document.getElementById('log-file-input');
+    const logFileLabel = document.getElementById('log-file-label');
+
+    ['dragenter', 'dragover'].forEach(name => {
+      if (logDropzone) logDropzone.addEventListener(name, (e) => { e.preventDefault(); logDropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      if (logDropzone) logDropzone.addEventListener(name, (e) => { e.preventDefault(); logDropzone.classList.remove('dragover'); });
+    });
+    if (logDropzone) {
+      logDropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handleLogFileSelect(e.dataTransfer.files[0]);
+      });
+    }
+    if (logFileInput) {
+      logFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleLogFileSelect(e.target.files[0]);
+      });
+    }
+
+    function handleLogFileSelect(file) {
+      selectedLogFile = file;
+      if (logFileLabel) logFileLabel.innerHTML = `<strong>Selected Log File:</strong> ${escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+
+    async function executeLogAnalysis() {
+      if (!selectedLogFile) { alert("Please select a log file to correlate."); return; }
+      const btn = document.getElementById('log-analyze-btn');
+      if (btn) { btn.innerText = "Correlating Events..."; btn.disabled = true; }
+
+      const formData = new FormData();
+      formData.append('file', selectedLogFile);
+
+      try {
+        const res = await fetch('/api/log/analyze', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`Log correlation failed with HTTP ${res.status}`);
+        const data = await res.json();
+        renderLogResults(data, true);
+      } catch (err) {
+        alert("Log analysis error: " + err.message);
+      } finally {
+        if (btn) { btn.innerText = "Correlate Log Events"; btn.disabled = false; }
+      }
+    }
+
+    function renderLogResults(data, saveToStorage = true) {
+      currentLogReport = data;
+      if (saveToStorage) {
+        try { localStorage.setItem('eft_last_log_report', JSON.stringify(data)); } catch (e) {}
+      }
+
+      const results = document.getElementById('log-results-section');
+      if (results) results.style.display = 'flex';
+
+      const evtxRep = data.evtx_report || {};
+      const secRep = data.security_report || {};
+      const cloudRep = data.cloud_report || {};
+
+      const total = (evtxRep.total_events || 0) + (cloudRep.total_records_parsed || 0);
+      document.getElementById('log-res-total').innerText = total || "Analyzed";
+
+      const findings = (secRep.findings || []).concat(cloudRep.suspicious_events || []);
+      const highFindings = findings.filter(f => f.severity === 'HIGH' || f.severity === 'CRITICAL' || f.risk_score >= 50);
+      document.getElementById('log-res-high').innerText = highFindings.length;
+
+      const mitreCount = (secRep.mitre_techniques ? secRep.mitre_techniques.length : 0) + (cloudRep.mitre_tactics ? cloudRep.mitre_tactics.length : 0);
+      document.getElementById('log-res-mitre').innerText = mitreCount;
+
+      document.getElementById('log-res-type').innerText = data.filename.endsWith('.evtx') ? 'Windows EVTX' : (data.filename.endsWith('.json') ? 'CloudTrail / JSON' : 'Audit Trail');
+
+      // Findings div
+      const findingsDiv = document.getElementById('log-findings-content');
+      if (findingsDiv) {
+        if (findings.length > 0) {
+          findingsDiv.innerHTML = `<div class="table-container"><table><thead><tr><th>Severity</th><th>Event / Technique</th><th>Entity / User</th><th>Details</th></tr></thead><tbody>` +
+            findings.map(f => `<tr><td><span class="auth-badge ${f.severity === 'HIGH' || f.severity === 'CRITICAL' ? 'auth-fail' : 'auth-none'}">${escapeHtml(f.severity || 'WARN')}</span></td><td><strong>${escapeHtml(f.technique_id || f.event_id || f.name || 'Event')}</strong></td><td>${escapeHtml(f.user || f.account || f.src_ip || '-')}</td><td>${escapeHtml(f.description || f.detail)}</td></tr>`).join('') +
+            `</tbody></table></div>`;
+        } else {
+          findingsDiv.innerHTML = `<p style="color:var(--accent-emerald); text-align:center; padding: 1.5rem;">No anomalous security events or MITRE ATT&CK techniques flagged.</p>`;
+        }
+      }
+
+      // Timeline div
+      const timelineDiv = document.getElementById('log-timeline-content');
+      if (timelineDiv) {
+        const events = (evtxRep.events || cloudRep.events || []).slice(0, 50);
+        if (events.length > 0) {
+          timelineDiv.innerHTML = `<div class="table-container"><table><thead><tr><th>Timestamp</th><th>Event ID / API</th><th>Computer / Resource</th><th>Message</th></tr></thead><tbody>` +
+            events.map(e => `<tr><td><code>${escapeHtml(e.timestamp || e.time || '-')}</code></td><td><strong>${escapeHtml(e.event_id || e.event_name || '-')}</strong></td><td>${escapeHtml(e.computer || e.service || '-')}</td><td>${escapeHtml(e.message || e.summary || '')}</td></tr>`).join('') +
+            `</tbody></table></div>`;
+        } else {
+          timelineDiv.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding: 1.5rem;">Timeline preview unavailable.</p>`;
+        }
+      }
+
+      document.getElementById('log-raw-json').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function switchLogTab(tabId) {
+      document.querySelectorAll('#ws-pane-log .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#ws-pane-log .tab-content').forEach(c => c.classList.remove('active'));
+
+      const btn = Array.from(document.querySelectorAll('#ws-pane-log .tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+      const pane = document.getElementById('tab-log-' + tabId);
+      if (pane) pane.classList.add('active');
+    }
+
+    function exportLogJSON() {
+      if (!currentLogReport) return;
+      const blob = new Blob([JSON.stringify(currentLogReport, null, 2)], { type: "application/json" });
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `log_report_${currentLogReport.filename || 'log'}_${Date.now()}.json`;
+      a.click();
+    }
+
+    // -------------------------------------------------------------------------
+    // WORKSPACE 6: VOLATILE MEMORY SCANNER
+    // -------------------------------------------------------------------------
+    const memDropzone = document.getElementById('mem-dropzone');
+    const memFileInput = document.getElementById('mem-file-input');
+    const memFileLabel = document.getElementById('mem-file-label');
+
+    ['dragenter', 'dragover'].forEach(name => {
+      if (memDropzone) memDropzone.addEventListener(name, (e) => { e.preventDefault(); memDropzone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(name => {
+      if (memDropzone) memDropzone.addEventListener(name, (e) => { e.preventDefault(); memDropzone.classList.remove('dragover'); });
+    });
+    if (memDropzone) {
+      memDropzone.addEventListener('drop', (e) => {
+        if (e.dataTransfer.files.length > 0) handleMemFileSelect(e.dataTransfer.files[0]);
+      });
+    }
+    if (memFileInput) {
+      memFileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleMemFileSelect(e.target.files[0]);
+      });
+    }
+
+    function handleMemFileSelect(file) {
+      selectedMemFile = file;
+      if (memFileLabel) memFileLabel.innerHTML = `<strong>Selected Memory Dump:</strong> ${escapeHtml(file.name)} (${(file.size / 1024).toFixed(1)} KB)`;
+    }
+
+    async function executeMemAnalysis() {
+      if (!selectedMemFile) { alert("Please select a memory dump file to scan."); return; }
+      const btn = document.getElementById('mem-analyze-btn');
+      if (btn) { btn.innerText = "Scanning Memory..."; btn.disabled = true; }
+
+      const formData = new FormData();
+      formData.append('file', selectedMemFile);
+
+      try {
+        const res = await fetch('/api/mem/analyze', { method: 'POST', body: formData });
+        if (!res.ok) throw new Error(`Memory scan failed with HTTP ${res.status}`);
+        const data = await res.json();
+        renderMemResults(data, true);
+      } catch (err) {
+        alert("Memory analysis error: " + err.message);
+      } finally {
+        if (btn) { btn.innerText = "Scan Memory Dump"; btn.disabled = false; }
+      }
+    }
+
+    function renderMemResults(data, saveToStorage = true) {
+      currentMemReport = data;
+      if (saveToStorage) {
+        try { localStorage.setItem('eft_last_mem_report', JSON.stringify(data)); } catch (e) {}
+      }
+
+      const results = document.getElementById('mem-results-section');
+      if (results) results.style.display = 'flex';
+
+      const extRep = data.extraction_report || {};
+      const iocRep = data.ioc_report || {};
+      const yaraRep = data.yara_report || {};
+
+      document.getElementById('mem-res-strings').innerText = extRep.total_strings || extRep.extracted_strings_count || 0;
+      document.getElementById('mem-res-iocs').innerText = iocRep.total_matches || (iocRep.matches ? iocRep.matches.length : 0);
+      
+      const yaraMatches = yaraRep.matches || [];
+      document.getElementById('mem-res-yara').innerText = yaraMatches.length;
+      document.getElementById('mem-res-sha256').innerText = data.sha256 || '-';
+
+      // YARA tab
+      const yaraDiv = document.getElementById('mem-yara-content');
+      if (yaraDiv) {
+        if (yaraMatches.length > 0) {
+          yaraDiv.innerHTML = `<div class="table-container"><table><thead><tr><th>Rule Identifier</th><th>Tags</th><th>Author</th><th>Description / Offsets</th></tr></thead><tbody>` +
+            yaraMatches.map(m => `<tr><td><strong style="color:var(--risk-critical)">${escapeHtml(m.rule_name || m.rule)}</strong></td><td>${m.tags ? m.tags.map(t => '<span class="auth-badge auth-fail">' + escapeHtml(t) + '</span>').join(' ') : '-'}</td><td>${escapeHtml(m.meta ? m.meta.author || '' : '')}</td><td>${escapeHtml(m.meta ? m.meta.description || '' : '')}</td></tr>`).join('') +
+            `</tbody></table></div>`;
+        } else {
+          yaraDiv.innerHTML = `<p style="color:var(--accent-emerald); text-align:center; padding: 1.5rem;">Zero YARA signature matches detected in memory stream.</p>`;
+        }
+      }
+
+      // IoCs tab
+      const iocsDiv = document.getElementById('mem-iocs-content');
+      if (iocsDiv) {
+        const matches = iocRep.matches || [];
+        if (matches.length > 0) {
+          iocsDiv.innerHTML = `<div class="table-container"><table><thead><tr><th>IoC Type</th><th>Extracted Value</th><th>Confidence</th></tr></thead><tbody>` +
+            matches.map(i => `<tr><td><span class="auth-badge auth-pass">${escapeHtml(i.ioc_type || i.type)}</span></td><td><code>${escapeHtml(i.value || i.match)}</code></td><td>${i.confidence ? (i.confidence * 100).toFixed(0) + '%' : '100%'}</td></tr>`).join('') +
+            `</tbody></table></div>`;
+        } else {
+          iocsDiv.innerHTML = `<p style="color:var(--text-muted); text-align:center; padding: 1.5rem;">No IP, URL, email, or crypto wallet IoC regexes matched.</p>`;
+        }
+      }
+
+      // Strings tab
+      const strContent = document.getElementById('mem-strings-content');
+      if (strContent) {
+        const strings = extRep.strings || extRep.sample_strings || [];
+        strContent.innerText = Array.isArray(strings) ? strings.slice(0, 500).join('\n') : JSON.stringify(strings, null, 2);
+      }
+
+      document.getElementById('mem-raw-json').innerText = JSON.stringify(data, null, 2);
+    }
+
+    function switchMemTab(tabId) {
+      document.querySelectorAll('#ws-pane-mem .tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#ws-pane-mem .tab-content').forEach(c => c.classList.remove('active'));
+
+      const btn = Array.from(document.querySelectorAll('#ws-pane-mem .tab-btn')).find(b => b.getAttribute('onclick') && b.getAttribute('onclick').includes(tabId));
+      if (btn) btn.classList.add('active');
+      const pane = document.getElementById('tab-mem-' + tabId);
+      if (pane) pane.classList.add('active');
+    }
+
+    function exportMemJSON() {
+      if (!currentMemReport) return;
+      const blob = new Blob([JSON.stringify(currentMemReport, null, 2)], { type: "application/json" });
+      const a = document.createElement('a');
+      a.href = window.URL.createObjectURL(blob);
+      a.download = `memory_report_${currentMemReport.filename || 'memory'}_${Date.now()}.json`;
+      a.click();
+    }
+
+    // -------------------------------------------------------------------------
+    // DOMCONTENTLOADED SESSION RESTORATION
+    // -------------------------------------------------------------------------
     window.addEventListener('DOMContentLoaded', () => {
       // 1. Restore Case & Examiner Metadata
       try {
@@ -1372,7 +2120,13 @@
         if (savedExaminer && examinerInput) examinerInput.value = savedExaminer;
       } catch (e) {}
 
-      // 2. Restore Last Analysis Data
+      // 2. Restore Workspace Switcher State
+      try {
+        const activeWs = localStorage.getItem('eft_active_workspace') || 'email';
+        switchWorkspace(activeWs);
+      } catch (e) {}
+
+      // 3. Restore Email Analysis Session
       try {
         const savedAnalysis = localStorage.getItem('eft_last_analysis');
         const savedSample = localStorage.getItem('eft_last_sample');
@@ -1380,40 +2134,59 @@
           const parsed = JSON.parse(savedAnalysis);
           if (savedSample && sampleSelectInput) {
             sampleSelectInput.value = savedSample;
-            fileNameLabel.innerHTML = `<strong>Restored Evidence:</strong> ${savedSample} <span style="color:var(--accent-cyan); font-size:0.75rem;">(Session Restored)</span>`;
+            emailFileNameLabel.innerHTML = `<strong>Restored Evidence:</strong> ${escapeHtml(savedSample)} <span style="color:var(--accent-cyan); font-size:0.75rem;">(Session Restored)</span>`;
           } else {
             const subj = parsed.email?.subject || parsed.subject || "Previous Evidence File";
-            fileNameLabel.innerHTML = `<strong>Restored Evidence:</strong> ${subj} <span style="color:var(--accent-cyan); font-size:0.75rem;">(Session Restored)</span>`;
+            emailFileNameLabel.innerHTML = `<strong>Restored Evidence:</strong> ${escapeHtml(subj)} <span style="color:var(--accent-cyan); font-size:0.75rem;">(Session Restored)</span>`;
           }
           renderAnalysisResults(parsed, savedSample, false);
 
-          // 3. Restore Active Tab
-          const savedTab = localStorage.getItem('eft_active_tab') || 'auth';
-          switchTab(savedTab);
+          const savedTab = localStorage.getItem('eft_active_email_tab') || 'auth';
+          switchEmailTab(savedTab);
         }
       } catch (e) {
-        console.error("Failed restoring saved forensic session", e);
+        console.error("Failed restoring saved email forensic session", e);
       }
 
-      // 4. Restore OSINT State if saved
+      // 4. Restore File & Binary Report
+      try {
+        const savedFile = localStorage.getItem('eft_last_file_report');
+        if (savedFile) renderFileResults(JSON.parse(savedFile), false);
+      } catch (e) {}
+
+      // 5. Restore OSINT State
       try {
         const savedOSINTTarget = localStorage.getItem('eft_last_osint_target');
         const savedOSINTReport = localStorage.getItem('eft_last_osint_report');
         if (savedOSINTTarget && document.getElementById('osint-target-input')) {
           document.getElementById('osint-target-input').value = savedOSINTTarget;
         }
-        if (savedOSINTReport) {
-          currentOSINTReport = JSON.parse(savedOSINTReport);
-          renderOSINTResults(currentOSINTReport);
+        if (savedOSINTReport) renderOSINTResults(JSON.parse(savedOSINTReport), false);
+
+        const savedIPReport = localStorage.getItem('eft_last_ip_report');
+        const savedIPTarget = localStorage.getItem('eft_last_ip_target');
+        if (savedIPTarget && document.getElementById('osint-ip-input')) {
+          document.getElementById('osint-ip-input').value = savedIPTarget;
         }
+        if (savedIPReport) renderIPResults(JSON.parse(savedIPReport), false);
       } catch (e) {}
 
-      // 5. Restore Main Mode
+      // 6. Restore PCAP Report
       try {
-        const savedMode = localStorage.getItem('eft_main_mode');
-        if (savedMode === 'osint') {
-          switchMainMode('osint');
-        }
+        const savedPCAP = localStorage.getItem('eft_last_pcap_report');
+        if (savedPCAP) renderPCAPResults(JSON.parse(savedPCAP), false);
+      } catch (e) {}
+
+      // 7. Restore Log Report
+      try {
+        const savedLog = localStorage.getItem('eft_last_log_report');
+        if (savedLog) renderLogResults(JSON.parse(savedLog), false);
+      } catch (e) {}
+
+      // 8. Restore Memory Report
+      try {
+        const savedMem = localStorage.getItem('eft_last_mem_report');
+        if (savedMem) renderMemResults(JSON.parse(savedMem), false);
       } catch (e) {}
     });
   </script>

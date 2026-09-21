@@ -14,9 +14,21 @@ from pydantic import BaseModel, Field
 from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
+from eft.analysis.binary_static_analyzer import BinaryStaticAnalyzer
+from eft.analysis.cloud_audit_analyzer import CloudAuditAnalyzer
+from eft.analysis.credential_leak_analyzer import CredentialLeakAnalyzer
+from eft.analysis.dns_threat_analyzer import DNSThreatAnalyzer
 from eft.analysis.domain_osint import DomainOSINTAnalyzer
+from eft.analysis.evtx_analyzer import WindowsLogAnalyzer
+from eft.analysis.file_analyzer import FileArtifactAnalyzer
+from eft.analysis.logon_persistence_analyzer import WindowsSecurityAnalyzer
+from eft.analysis.memory_analyzer import MemoryArtifactAnalyzer
+from eft.analysis.memory_ioc_matcher import MemoryIoCMatcher
+from eft.analysis.memory_yara_scanner import MemoryYARAScanner
+from eft.analysis.metadata_extractor import MetadataExtractor
 from eft.analysis.network_intelligence import NetworkIntelligenceService
 from eft.analysis.obfuscation_detector import ContentObfuscationDetector
+from eft.analysis.pcap_analyzer import NetworkPCAPAnalyzer
 from eft.analysis.relay_analyzer import RelayAnalyzer
 from eft.analysis.threat_scorer import ThreatScorer
 from eft.analysis.url_analyzer import URLAnalyzer
@@ -320,3 +332,244 @@ def lookup_osint_endpoint(request: OSINTLookupRequest) -> Dict[str, Any]:
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"OSINT analysis failed: {str(e)}")
+
+
+class OSINTIPRequest(BaseModel):
+    """Payload for IP geolocation & ASN intelligence lookup."""
+
+    ip: str = Field(..., description="Target IPv4 or IPv6 address to inspect")
+
+
+@router.post("/api/osint/ip")
+def lookup_ip_endpoint(request: OSINTIPRequest) -> Dict[str, Any]:
+    """Inspect IP Geolocation, ASN ownership, reverse DNS, and threat signals."""
+    ip_clean = request.ip.strip()
+    if not ip_clean:
+        raise HTTPException(status_code=400, detail="IP address is required.")
+
+    net_service = NetworkIntelligenceService()
+    intel = net_service.lookup_ip(ip_clean)
+    if not intel:
+        raise HTTPException(status_code=400, detail=f"Invalid IP address '{ip_clean}'")
+
+    return {
+        "success": True,
+        "ip": ip_clean,
+        "is_private": intel.is_private,
+        "intelligence": intel.model_dump(mode="json"),
+    }
+
+
+# ---------------------------------------------------------------------------
+# 2. FILE & BINARY INSPECTOR API
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/file/analyze")
+async def analyze_file_endpoint(
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
+    """Inspect uploaded binary, document, or archive for magic bytes, entropy, PE headers, and EXIF."""
+    content = await file.read()
+    suffix = Path(file.filename or "evidence.bin").suffix
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+
+    try:
+        hashes = compute_file_hashes(tmp_path)
+        static_analyzer = BinaryStaticAnalyzer()
+        static_report = static_analyzer.analyze(tmp_path, filename=file.filename)
+
+        file_analyzer = FileArtifactAnalyzer()
+        artifact_report = file_analyzer.analyze_file(tmp_path)
+
+        meta_extractor = MetadataExtractor()
+        meta_report = meta_extractor.extract_from_file(tmp_path)
+
+        return {
+            "success": True,
+            "filename": file.filename or "evidence.bin",
+            "size_bytes": len(content),
+            "hashes": hashes,
+            "sha256": hashes["sha256"],
+            "static_report": static_report.model_dump(mode="json"),
+            "artifact_report": artifact_report.model_dump(mode="json"),
+            "metadata_report": meta_report.model_dump(mode="json"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"File inspection failed: {str(e)}")
+    finally:
+        if tmp_path.is_file():
+            tmp_path.unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# 3. NETWORK PCAP ANALYZER API
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/pcap/analyze")
+async def analyze_pcap_endpoint(
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
+    """Dissect PCAP/PCAPNG streams for flows, DNS tunneling, and cleartext credentials."""
+    content = await file.read()
+    suffix = Path(file.filename or "capture.pcap").suffix.lower()
+    if suffix not in [".pcap", ".pcapng", ".cap"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported capture format '{suffix}'. Supported: .pcap, .pcapng, .cap",
+        )
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+
+    try:
+        hashes = compute_file_hashes(tmp_path)
+        pcap_analyzer = NetworkPCAPAnalyzer()
+        pcap_report = pcap_analyzer.analyze(tmp_path)
+
+        dns_analyzer = DNSThreatAnalyzer()
+        dns_report = dns_analyzer.analyze_pcap(tmp_path)
+
+        cred_analyzer = CredentialLeakAnalyzer()
+        cred_report = cred_analyzer.analyze_pcap(tmp_path)
+
+        return {
+            "success": True,
+            "filename": file.filename or "capture.pcap",
+            "size_bytes": len(content),
+            "hashes": hashes,
+            "sha256": hashes["sha256"],
+            "pcap_report": pcap_report.model_dump(mode="json"),
+            "dns_report": dns_report.model_dump(mode="json"),
+            "credential_report": cred_report.model_dump(mode="json"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"PCAP analysis failed: {str(e)}")
+    finally:
+        if tmp_path.is_file():
+            tmp_path.unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# 4. WINDOWS & CLOUD EVENT LOG CORRELATOR API
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/log/analyze")
+async def analyze_log_endpoint(
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
+    """Correlate Windows EVTX logs, Sysmon process trees, and M365/Google cloud audit records."""
+    content = await file.read()
+    suffix = Path(file.filename or "security.evtx").suffix.lower()
+    if suffix not in [".evtx", ".json", ".csv", ".xml", ".log"]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported log format '{suffix}'. Supported: .evtx, .json, .csv, .xml, .log",
+        )
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+
+    try:
+        hashes = compute_file_hashes(tmp_path)
+        evtx_report = None
+        sec_report = None
+        cloud_report = None
+
+        if suffix in [".evtx", ".xml"]:
+            try:
+                evtx_analyzer = WindowsLogAnalyzer()
+                evtx_report = evtx_analyzer.analyze_file(tmp_path)
+            except Exception:
+                pass
+            try:
+                sec_analyzer = WindowsSecurityAnalyzer()
+                sec_report = sec_analyzer.analyze_file(tmp_path)
+            except Exception:
+                pass
+
+        elif suffix in [".json", ".csv", ".log"]:
+            try:
+                cloud_analyzer = CloudAuditAnalyzer()
+                cloud_report = cloud_analyzer.analyze_file(tmp_path)
+            except Exception:
+                pass
+            if not cloud_report or cloud_report.total_records_parsed == 0:
+                try:
+                    sec_analyzer = WindowsSecurityAnalyzer()
+                    sec_report = sec_analyzer.analyze_file(tmp_path)
+                except Exception:
+                    pass
+                try:
+                    evtx_analyzer = WindowsLogAnalyzer()
+                    evtx_report = evtx_analyzer.analyze_file(tmp_path)
+                except Exception:
+                    pass
+
+        return {
+            "success": True,
+            "filename": file.filename or "event_log",
+            "size_bytes": len(content),
+            "hashes": hashes,
+            "sha256": hashes["sha256"],
+            "evtx_report": evtx_report.model_dump(mode="json") if evtx_report else None,
+            "security_report": sec_report.model_dump(mode="json") if sec_report else None,
+            "cloud_report": cloud_report.model_dump(mode="json") if cloud_report else None,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Log correlation failed: {str(e)}")
+    finally:
+        if tmp_path.is_file():
+            tmp_path.unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# 5. VOLATILE MEMORY SCANNER API
+# ---------------------------------------------------------------------------
+
+
+@router.post("/api/mem/analyze")
+async def analyze_memory_endpoint(
+    file: UploadFile = File(...),
+) -> Dict[str, Any]:
+    """Scan volatile memory dumps for strings, regex IoCs, and YARA signature attribution."""
+    content = await file.read()
+    suffix = Path(file.filename or "memory.dmp").suffix.lower()
+
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp.write(content)
+        tmp_path = Path(tmp.name)
+
+    try:
+        hashes = compute_file_hashes(tmp_path)
+        mem_analyzer = MemoryArtifactAnalyzer()
+        extraction_report = mem_analyzer.analyze(tmp_path)
+
+        ioc_matcher = MemoryIoCMatcher()
+        ioc_report = ioc_matcher.scan_stream(tmp_path)
+
+        yara_scanner = MemoryYARAScanner()
+        yara_report = yara_scanner.scan_stream(tmp_path)
+
+        return {
+            "success": True,
+            "filename": file.filename or "memory.dmp",
+            "size_bytes": len(content),
+            "hashes": hashes,
+            "sha256": hashes["sha256"],
+            "extraction_report": extraction_report.model_dump(mode="json"),
+            "ioc_report": ioc_report.model_dump(mode="json"),
+            "yara_report": yara_report.model_dump(mode="json"),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Memory scan failed: {str(e)}")
+    finally:
+        if tmp_path.is_file():
+            tmp_path.unlink(missing_ok=True)
