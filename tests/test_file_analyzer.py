@@ -421,7 +421,7 @@ class TestThreatScoringAndArtifactReports:
 
         try:
             report = analyzer.analyze_file(tmp_path)
-            assert report.file_path == str(tmp_path)
+            assert report.file_path == str(tmp_path.resolve())
             assert report.identification.category == FileFormatCategory.IMAGE
             assert report.threat_severity == RiskSeverity.CLEAN
             assert report.size_bytes == 48
