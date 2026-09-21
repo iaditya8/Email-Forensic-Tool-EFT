@@ -44,6 +44,20 @@ class MemoryIoCType(str, Enum):
     HIGH_RISK_CREDENTIAL = "HIGH_RISK_CREDENTIAL"
 
 
+class MemoryThreatFamily(str, Enum):
+    """Recognized malware/tooling threat family classification for memory findings."""
+
+    COBALT_STRIKE = "COBALT_STRIKE"
+    MIMIKATZ = "MIMIKATZ"
+    METERPRETER = "METERPRETER"
+    LUMMA_STEALER = "LUMMA_STEALER"
+    REDLINE_STEALER = "REDLINE_STEALER"
+    REFLECTIVE_INJECTION = "REFLECTIVE_INJECTION"
+    RANSOMWARE_ENCRYPTOR = "RANSOMWARE_ENCRYPTOR"
+    GENERIC_TROJAN = "GENERIC_TROJAN"
+    BENIGN = "BENIGN"
+
+
 class ExtractedStringItem(BaseModel):
     """Canonical model for a single extracted string artifact."""
 
@@ -179,4 +193,66 @@ class MemoryPatternReport(BaseModel):
     analysis_timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="UTC timestamp of the memory pattern triage",
+    )
+
+
+class MemoryYARAMatch(BaseModel):
+    """Canonical model for a YARA rule match on a memory dump block."""
+
+    model_config = ConfigDict(frozen=True)
+
+    rule_name: str = Field(..., description="Identifier of the matching YARA rule")
+    threat_family: MemoryThreatFamily = Field(
+        default=MemoryThreatFamily.BENIGN,
+        description="Attributed threat framework or malware family",
+    )
+    severity: str = Field(
+        default="HIGH", description="Severity level: INFO, LOW, MEDIUM, HIGH, CRITICAL"
+    )
+    tags: list[str] = Field(default_factory=list, description="Descriptive metadata tags")
+    meta: dict[str, Any] = Field(
+        default_factory=dict, description="Rule description, author, and reference metadata"
+    )
+    strings_matched: list[tuple[int, str, str]] = Field(
+        default_factory=list,
+        description="List of (offset, identifier, matched_value) tuples discovered in memory",
+    )
+    risk_score: int = Field(default=80, description="Heuristic risk score from 0 to 100")
+    mitre_attack: str | None = Field(
+        default=None, description="Associated MITRE ATT&CK technique (e.g. T1055, T1003)"
+    )
+
+
+class MemoryThreatAttributionReport(BaseModel):
+    """Master report containing YARA signature findings and threat actor framework attribution."""
+
+    model_config = ConfigDict(frozen=True)
+
+    evidence_path: str = Field(..., description="Path or identifier of the analyzed memory image")
+    evidence_hashes: dict[str, str] = Field(
+        default_factory=dict, description="Cryptographic acquisition hashes (md5, sha256)"
+    )
+    total_yara_matches: int = Field(
+        default=0, description="Total number of YARA rules matched across the memory image"
+    )
+    threat_families_detected: list[MemoryThreatFamily] = Field(
+        default_factory=list,
+        description="Deduplicated list of attributed malware/tooling families",
+    )
+    yara_matches: list[MemoryYARAMatch] = Field(
+        default_factory=list, description="Chronological list of all matching YARA rule results"
+    )
+    composite_threat_score: int = Field(
+        default=0, description="Composite volatile memory threat score from 0 (benign) to 100"
+    )
+    threat_level: str = Field(
+        default="LOW", description="Overall risk rating: LOW, MEDIUM, HIGH, CRITICAL"
+    )
+    attribution_summary: str = Field(
+        default="No volatile memory threat signatures identified.",
+        description="Executive textual summary of attribution findings",
+    )
+    analysis_timestamp: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="UTC timestamp of the volatile memory YARA attribution scan",
     )
