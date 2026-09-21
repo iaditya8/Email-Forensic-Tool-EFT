@@ -154,16 +154,48 @@ class DomainOSINTAnalyzer:
     @classmethod
     def _load_watchlist(cls, path: Optional[Union[str, Path]]) -> Dict[str, Any]:
         """Load protected domain and vendor watchlist from disk or default."""
-        target_path = Path(path) if path else Path("watchlist.json")
-        if target_path.exists():
-            try:
-                with open(target_path, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            except Exception as e:
-                logger.warning("Failed to load watchlist from %s: %e", target_path, e)
+        candidate_paths: List[Path] = []
+        if path:
+            candidate_paths.append(Path(path))
+        else:
+            candidate_paths.extend(
+                [
+                    Path("data/config/watchlist.json"),
+                    Path(__file__).resolve().parent.parent.parent.parent
+                    / "data"
+                    / "config"
+                    / "watchlist.json",
+                    Path("watchlist.json"),
+                ]
+            )
+
+        for target_path in candidate_paths:
+            if target_path.is_file():
+                try:
+                    with open(target_path, "r", encoding="utf-8") as f:
+                        return json.load(f)
+                except Exception as e:
+                    logger.warning("Failed to load watchlist from %s: %e", target_path, e)
+
         return {
             "protected_domains": DEFAULT_PROTECTED_DOMAINS,
-            "trusted_partner_vendors": [],
+            "trusted_partner_vendors": [
+                {
+                    "vendor_name": "DocuSign",
+                    "official_domain": "docusign.com",
+                    "allowed_mx_patterns": ["*.docusign.net", "*.mktomail.com"],
+                },
+                {
+                    "vendor_name": "Microsoft 365",
+                    "official_domain": "microsoft.com",
+                    "allowed_mx_patterns": ["*.protection.outlook.com"],
+                },
+                {
+                    "vendor_name": "ADP Payroll",
+                    "official_domain": "adp.com",
+                    "allowed_mx_patterns": ["*.adp.com"],
+                },
+            ],
         }
 
     def analyze(
