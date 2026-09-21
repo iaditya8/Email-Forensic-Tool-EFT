@@ -209,7 +209,9 @@ class ELFAnalysisReport(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     is_valid_elf: bool = True
-    architecture: str = "Unknown"  # "ELF64 (x86-64)", "ELF32 (i386)", "ELF64 (ARM64 / AArch64)", etc.
+    architecture: str = (
+        "Unknown"  # "ELF64 (x86-64)", "ELF32 (i386)", "ELF64 (ARM64 / AArch64)", etc.
+    )
     ei_class: str = "64-bit"
     endianness: str = "Little-Endian"
     os_abi: str = "UNIX - System V"

@@ -1,9 +1,8 @@
-"""Unit tests for ELF binary static analyzer and PE/ELF structure rendering."""
-
 import struct
+
 from eft.analysis.binary_static_analyzer import BinaryStaticAnalyzer
 from eft.analysis.elf_analyzer import ELFBinaryAnalyzer
-from eft.models.pe_ole import ELFAnalysisReport, RiskSeverity
+from eft.models.pe_ole import ELFAnalysisReport
 
 
 def build_synthetic_elf64(
@@ -12,12 +11,12 @@ def build_synthetic_elf64(
 ) -> bytes:
     """Construct valid synthetic 64-bit ELF binary structure for unit testing."""
     endian = "<"
-    
+
     # Section string table contents
     sec_names = [b"\x00", b".text\x00", b".shstrtab\x00"]
     if is_packed:
         sec_names.insert(2, b"UPX0\x00")
-    
+
     shstrtab = b"".join(sec_names)
     text_code = b"\x90\x90\x90\xc3"
     if has_suspicious_apis:
@@ -39,29 +38,29 @@ def build_synthetic_elf64(
     elf_ident = b"\x7fELF\x02\x01\x01\x00" + b"\x00" * 8
     elf_hdr = elf_ident + struct.pack(
         f"{endian}HHIQQQIHHHHHH",
-        2,       # e_type: ET_EXEC
-        0x3E,    # e_machine: x86-64
-        1,       # e_version
-        0x401000,# e_entry
-        e_phoff, # e_phoff
-        e_shoff, # e_shoff
-        0,       # e_flags
-        header_size, # e_ehsize
-        ph_size,     # e_phentsize
-        ph_num,      # e_phnum
-        sh_size,     # e_shentsize
-        sh_num,      # e_shnum
-        shstrndx,    # e_shstrndx
+        2,  # e_type: ET_EXEC
+        0x3E,  # e_machine: x86-64
+        1,  # e_version
+        0x401000,  # e_entry
+        e_phoff,  # e_phoff
+        e_shoff,  # e_shoff
+        0,  # e_flags
+        header_size,  # e_ehsize
+        ph_size,  # e_phentsize
+        ph_num,  # e_phnum
+        sh_size,  # e_shentsize
+        sh_num,  # e_shnum
+        shstrndx,  # e_shstrndx
     )
 
     # 2. Program Header (PT_LOAD)
     ph_entry = struct.pack(
         f"{endian}IIQQQQQQ",
-        1,       # p_type: PT_LOAD
-        5,       # p_flags: PF_R | PF_X
-        0,       # p_offset
-        0x400000,# p_vaddr
-        0x400000,# p_paddr
+        1,  # p_type: PT_LOAD
+        5,  # p_flags: PF_R | PF_X
+        0,  # p_offset
+        0x400000,  # p_vaddr
+        0x400000,  # p_paddr
         0x1000,  # p_filesz
         0x1000,  # p_memsz
         0x1000,  # p_align
@@ -70,21 +69,21 @@ def build_synthetic_elf64(
     # 3. Section Headers
     # Null section
     sh_null = b"\x00" * sh_size
-    
+
     # .text section
     name_idx_text = shstrtab.find(b".text")
     sh_text = struct.pack(
         f"{endian}IIQQQQIIQQ",
-        name_idx_text, # sh_name
-        1,             # sh_type: PROGBITS
-        6,             # sh_flags: SHF_ALLOC | SHF_EXECINSTR
-        0x401000,      # sh_addr
-        text_offset,   # sh_offset
-        len(text_code),# sh_size
-        0,             # sh_link
-        0,             # sh_info
-        16,            # sh_addralign
-        0,             # sh_entsize
+        name_idx_text,  # sh_name
+        1,  # sh_type: PROGBITS
+        6,  # sh_flags: SHF_ALLOC | SHF_EXECINSTR
+        0x401000,  # sh_addr
+        text_offset,  # sh_offset
+        len(text_code),  # sh_size
+        0,  # sh_link
+        0,  # sh_info
+        16,  # sh_addralign
+        0,  # sh_entsize
     )
 
     # Optional UPX section
@@ -95,7 +94,7 @@ def build_synthetic_elf64(
             f"{endian}IIQQQQIIQQ",
             name_idx_upx,
             1,
-            7, # SHF_WRITE | SHF_ALLOC | SHF_EXECINSTR (W+X)
+            7,  # SHF_WRITE | SHF_ALLOC | SHF_EXECINSTR (W+X)
             0x402000,
             text_offset,
             len(text_code),
@@ -110,18 +109,27 @@ def build_synthetic_elf64(
     sh_strtab = struct.pack(
         f"{endian}IIQQQQIIQQ",
         name_idx_strtab,
-        3,             # sh_type: STRTAB
-        0,             # sh_flags
-        0,             # sh_addr
-        shstrtab_offset, # sh_offset
-        len(shstrtab), # sh_size
+        3,  # sh_type: STRTAB
+        0,  # sh_flags
+        0,  # sh_addr
+        shstrtab_offset,  # sh_offset
+        len(shstrtab),  # sh_size
         0,
         0,
         1,
         0,
     )
 
-    return elf_hdr + ph_entry + text_code + shstrtab + sh_null + sh_text + (sh_upx if is_packed else b"") + sh_strtab
+    return (
+        elf_hdr
+        + ph_entry
+        + text_code
+        + shstrtab
+        + sh_null
+        + sh_text
+        + (sh_upx if is_packed else b"")
+        + sh_strtab
+    )
 
 
 def test_elf_analyzer_clean_binary():

@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import math
 import struct
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from eft.analysis.pe_analyzer import calculate_shannon_entropy, classify_entropy
 from eft.models.pe_ole import (
     ELFAnalysisReport,
     ELFSectionAnalysis,
-    EntropyLevel,
 )
 from eft.models.threat import RiskSeverity
 
@@ -213,10 +211,6 @@ class ELFBinaryAnalyzer:
             return shstrtab_data[name_offset:end].decode("latin-1", errors="replace")
 
         # Parse Sections
-        raw_sections_info: List[Dict[str, Any]] = []
-        dynstr_data = b""
-        dynsym_info = None
-
         if e_shoff > 0 and e_shentsize > 0 and e_shnum > 0:
             for i in range(e_shnum):
                 sec_offset = e_shoff + i * e_shentsize
@@ -262,8 +256,6 @@ class ELFBinaryAnalyzer:
                 if sh_type != 8 and sh_size > 0 and sh_offset + sh_size <= len(data):  # Not NOBITS
                     sec_bytes = data[sh_offset : sh_offset + sh_size]
                     sec_entropy = calculate_shannon_entropy(sec_bytes)
-                    if sec_name == ".dynstr":
-                        dynstr_data = sec_bytes
 
                 sec_ent_level = classify_entropy(sec_entropy)
 
@@ -299,16 +291,6 @@ class ELFBinaryAnalyzer:
                     flags_hex=f"0x{sh_flags:X}",
                 )
                 sections.append(sec_analysis)
-                raw_sections_info.append(
-                    {
-                        "name": sec_name,
-                        "type": sh_type,
-                        "offset": sh_offset,
-                        "size": sh_size,
-                        "link": sh_link,
-                        "entsize": sh_entsize,
-                    }
-                )
 
         # Program Headers (PT_INTERP, PT_GNU_STACK, PT_DYNAMIC)
         interpreter: Optional[str] = None
@@ -349,8 +331,7 @@ class ELFBinaryAnalyzer:
         suspicious_symbols: List[str] = []
 
         # Scan for known dynamic library strings and API symbols in string table or entire binary
-        string_matches = set()
-        for sym_name, (desc, sev, pts) in SUSPICIOUS_LINUX_SYMBOLS.items():
+        for sym_name, (desc, _sev, pts) in SUSPICIOUS_LINUX_SYMBOLS.items():
             sym_bytes = sym_name.encode("ascii")
             if sym_bytes in data:
                 suspicious_symbols.append(f"{sym_name} ({desc})")
