@@ -1,3 +1,5 @@
+__version__ = "2.0.0"
+
 from eft.analysis.attachment_scanner import AttachmentThreatScanner
 from eft.analysis.auth_verifier import AuthenticationVerifier
 from eft.analysis.bec_detector import BECDetector
