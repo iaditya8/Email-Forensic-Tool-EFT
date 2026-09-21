@@ -61,6 +61,9 @@ data/evidence/*
 !data/evidence/.gitkeep
 data/exports/*
 !data/exports/.gitkeep
+data/geoip/*.mmdb
+!data/geoip/.gitkeep
+!data/geoip/README.md
 logs/
 *.log
 

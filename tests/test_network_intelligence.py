@@ -172,3 +172,46 @@ def test_invalid_and_empty_inputs():
     assert service.lookup_ip("   ") is None
     assert service.lookup_ip("invalid.not.an.ip") is None
     assert service.lookup_ip("999.999.999.999") is None
+
+
+def test_mmdb_reader_mock_and_env_vars(monkeypatch, tmp_path):
+    """Test NetworkIntelligenceService loading from custom paths, env vars, and mock reader."""
+    from unittest.mock import MagicMock
+
+    # Test initialization with explicit paths
+    fake_city = tmp_path / "fake_city.mmdb"
+    fake_city.write_bytes(b"dummy")
+    fake_asn = tmp_path / "fake_asn.mmdb"
+    fake_asn.write_bytes(b"dummy")
+
+    monkeypatch.setenv("GEOIP_CITY_DB", str(fake_city))
+    monkeypatch.setenv("GEOIP_ASN_DB", str(fake_asn))
+
+    service = NetworkIntelligenceService()
+
+    # Mock readers
+    mock_city_reader = MagicMock()
+    mock_city_reader.get.return_value = {
+        "country": {"names": {"en": "Switzerland"}, "iso_code": "CH"},
+        "city": {"names": {"en": "Zurich"}},
+        "subdivisions": [{"names": {"en": "Zurich"}}],
+        "location": {"latitude": 47.3769, "longitude": 8.5417},
+    }
+    mock_asn_reader = MagicMock()
+    mock_asn_reader.get.return_value = {
+        "autonomous_system_number": 55555,
+        "autonomous_system_organization": "Swiss Privacy Provider",
+    }
+
+    service._city_reader = mock_city_reader
+    service._asn_reader = mock_asn_reader
+
+    intel = service.lookup_ip("194.126.12.1")
+    assert intel is not None
+    assert intel.country == "Switzerland"
+    assert intel.country_code == "CH"
+    assert intel.city == "Zurich"
+    assert intel.latitude == 47.3769
+    assert intel.longitude == 8.5417
+    assert intel.asn == 55555
+    assert intel.as_org == "Swiss Privacy Provider"

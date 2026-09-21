@@ -1,0 +1,88 @@
+{
+  "organization_name": "Acme Enterprise Corp",
+  "version": "1.0.0",
+  "description": "VIP & Protected Domain Watchlist for Business Email Compromise (BEC) and Typosquatting Defense",
+  "protected_domains": [
+    "acme.com",
+    "corp.acme.com",
+    "acmeglobal.com",
+    "acme-finance.com",
+    "microsoft.com",
+    "office365.com",
+    "google.com",
+    "docusign.com",
+    "paypal.com",
+    "chase.com",
+    "bankofamerica.com",
+    "wellsfargo.com",
+    "quickbooks.com",
+    "intuit.com",
+    "adp.com"
+  ],
+  "protected_executives": [
+    {
+      "name": "Sarah Jenkins",
+      "email": "sjenkins@acme.com",
+      "title": "Chief Executive Officer (CEO)",
+      "aliases": ["Sarah J.", "S. Jenkins", "Sarah Jenkins (CEO)"]
+    },
+    {
+      "name": "Marcus Vance",
+      "email": "mvance@acme.com",
+      "title": "Chief Financial Officer (CFO)",
+      "aliases": ["Marcus V.", "M. Vance", "Marcus Vance (CFO)"]
+    },
+    {
+      "name": "Elena Rostova",
+      "email": "erostova@acme.com",
+      "title": "Chief Information Security Officer (CISO)",
+      "aliases": ["Elena R.", "E. Rostova", "Elena Rostova (CISO)"]
+    },
+    {
+      "name": "David Sterling",
+      "email": "dsterling@acme.com",
+      "title": "Vice President of Treasury & Finance",
+      "aliases": ["David S.", "D. Sterling"]
+    },
+    {
+      "name": "Rachel Adams",
+      "email": "radams@acme.com",
+      "title": "Head of People Operations / HR",
+      "aliases": ["Rachel A.", "R. Adams"]
+    },
+    {
+      "name": "Jonathan Reed",
+      "email": "jreed@acme.com",
+      "title": "General Counsel / Legal",
+      "aliases": ["Jon Reed", "J. Reed"]
+    }
+  ],
+  "monitored_financial_triggers": [
+    "wire transfer",
+    "urgent payment",
+    "swift code",
+    "bank account change",
+    "direct deposit routing",
+    "gift cards for clients",
+    "confidential acquisition",
+    "invoice overdue settlement",
+    "w-2 tax form request"
+  ],
+  "trusted_partner_vendors": [
+    {
+      "vendor_name": "DocuSign",
+      "official_domain": "docusign.com",
+      "allowed_mx_patterns": ["*.docusign.net", "*.mktomail.com"]
+    },
+    {
+      "vendor_name": "Microsoft 365",
+      "official_domain": "microsoft.com",
+      "allowed_mx_patterns": ["*.protection.outlook.com"]
+    },
+    {
+      "vendor_name": "ADP Payroll",
+      "official_domain": "adp.com",
+      "allowed_mx_patterns": ["*.adp.com"]
+    }
+  ]
+}

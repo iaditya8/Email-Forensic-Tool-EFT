@@ -3,7 +3,14 @@
 from __future__ import annotations
 
 import ipaddress
-from typing import Callable, Dict, List, Optional, Tuple
+import os
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+try:
+    import maxminddb
+except ImportError:
+    maxminddb = None  # type: ignore[assignment]
 
 from eft.models.canonical import (
     CanonicalEmail,
@@ -168,14 +175,44 @@ class NetworkIntelligenceService:
     def __init__(
         self,
         custom_provider: Optional[Callable[[str], Optional[IPNetworkIntelligence]]] = None,
+        city_db_path: Optional[str | Path] = None,
+        asn_db_path: Optional[str | Path] = None,
     ) -> None:
-        """Initialize NetworkIntelligenceService with cache and optional live provider.
+        """Initialize NetworkIntelligenceService with cache, MMDB readers, and optional live provider.
 
         Args:
             custom_provider: Optional callable for external or dynamic GeoIP lookup queries.
+            city_db_path: Optional path to GeoLite2-City.mmdb file.
+            asn_db_path: Optional path to GeoLite2-ASN.mmdb file.
         """
         self._cache: Dict[str, IPNetworkIntelligence] = {}
         self._custom_provider = custom_provider
+        self._city_reader = None
+        self._asn_reader = None
+
+        # Resolve City MMDB path
+        resolved_city_path = (
+            city_db_path or os.environ.get("GEOIP_CITY_DB") or "data/geoip/GeoLite2-City.mmdb"
+        )
+        if resolved_city_path and maxminddb is not None:
+            c_p = Path(resolved_city_path)
+            if c_p.is_file():
+                try:
+                    self._city_reader = maxminddb.open_database(str(c_p))
+                except Exception:
+                    self._city_reader = None
+
+        # Resolve ASN MMDB path
+        resolved_asn_path = (
+            asn_db_path or os.environ.get("GEOIP_ASN_DB") or "data/geoip/GeoLite2-ASN.mmdb"
+        )
+        if resolved_asn_path and maxminddb is not None:
+            a_p = Path(resolved_asn_path)
+            if a_p.is_file():
+                try:
+                    self._asn_reader = maxminddb.open_database(str(a_p))
+                except Exception:
+                    self._asn_reader = None
 
     def register_provider(
         self,
@@ -190,9 +227,10 @@ class NetworkIntelligenceService:
         Features:
         1. Fast in-memory session cache.
         2. RFC 1918 / Loopback private network isolation.
-        3. Embedded offline fallback database (for air-gapped forensic environments).
-        4. Cloud provider classification (AWS, Azure, GCP, Cloudflare, etc.).
-        5. Threat & anonymizer flagging (Tor Exit Node, Commercial VPN/Proxy).
+        3. Local MaxMind GeoLite2 City & ASN MMDB offline queries (if present).
+        4. Embedded offline fallback database (for air-gapped forensic environments).
+        5. Cloud provider classification (AWS, Azure, GCP, Cloudflare, etc.).
+        6. Threat & anonymizer flagging (Tor Exit Node, Commercial VPN/Proxy).
 
         Args:
             ip_str: Target IPv4 or IPv6 address string.
@@ -243,21 +281,127 @@ class NetworkIntelligenceService:
             except Exception:
                 pass
 
-        # 3. Check Embedded Offline Forensic Database
+        # 3. Check Local MaxMind GeoLite2 MMDB Databases (Air-Gapped)
+        if self._city_reader or self._asn_reader:
+            try:
+                country_name: Optional[str] = None
+                country_iso: Optional[str] = None
+                city_name: Optional[str] = None
+                region_name: Optional[str] = None
+                lat_val: Optional[float] = None
+                lon_val: Optional[float] = None
+                asn_num: Optional[int] = None
+                as_org_name: Optional[str] = None
+
+                if self._city_reader:
+                    raw_city: Any = self._city_reader.get(clean_ip)
+                    if isinstance(raw_city, dict):
+                        country_dict = raw_city.get("country")
+                        if isinstance(country_dict, dict):
+                            names_dict = country_dict.get("names")
+                            if isinstance(names_dict, dict):
+                                c_name = names_dict.get("en")
+                                if c_name is not None:
+                                    country_name = str(c_name)
+                            c_iso = country_dict.get("iso_code")
+                            if c_iso is not None:
+                                country_iso = str(c_iso)
+
+                        city_dict = raw_city.get("city")
+                        if isinstance(city_dict, dict):
+                            names_dict = city_dict.get("names")
+                            if isinstance(names_dict, dict):
+                                ct_name = names_dict.get("en")
+                                if ct_name is not None:
+                                    city_name = str(ct_name)
+
+                        subdivs = raw_city.get("subdivisions")
+                        if (
+                            isinstance(subdivs, list)
+                            and len(subdivs) > 0
+                            and isinstance(subdivs[0], dict)
+                        ):
+                            s_names = subdivs[0].get("names")
+                            if isinstance(s_names, dict):
+                                s_en = s_names.get("en")
+                                if s_en is not None:
+                                    region_name = str(s_en)
+
+                        loc = raw_city.get("location")
+                        if isinstance(loc, dict):
+                            lt = loc.get("latitude")
+                            ln = loc.get("longitude")
+                            if lt is not None:
+                                lat_val = float(str(lt))
+                            if ln is not None:
+                                lon_val = float(str(ln))
+
+                if self._asn_reader:
+                    raw_asn: Any = self._asn_reader.get(clean_ip)
+                    if isinstance(raw_asn, dict):
+                        asn_val = raw_asn.get("autonomous_system_number")
+                        if asn_val is not None:
+                            asn_num = int(str(asn_val))
+                        as_org_val = raw_asn.get("autonomous_system_organization")
+                        if as_org_val is not None:
+                            as_org_name = str(as_org_val)
+
+                if clean_ip in OFFLINE_IP_DATABASE:
+                    off = OFFLINE_IP_DATABASE[clean_ip]
+                    if not country_name or country_name == "Unknown Country":
+                        country_name = str(off.get("country")) if off.get("country") else None
+                    if not country_iso or country_iso == "XX":
+                        country_iso = (
+                            str(off.get("country_code")) if off.get("country_code") else None
+                        )
+                    if not city_name:
+                        city_name = str(off.get("city")) if off.get("city") else None
+                    if not region_name:
+                        region_name = str(off.get("region")) if off.get("region") else None
+                    if lat_val is None and off.get("latitude") is not None:
+                        lat_val = float(str(off.get("latitude")))
+                    if lon_val is None and off.get("longitude") is not None:
+                        lon_val = float(str(off.get("longitude")))
+                    if asn_num is None and off.get("asn") is not None:
+                        asn_num = int(str(off.get("asn")))
+                    if not as_org_name and off.get("as_org"):
+                        as_org_name = str(off.get("as_org"))
+
+                if country_name or city_name or asn_num:
+                    intel = IPNetworkIntelligence(
+                        ip=clean_ip,
+                        country=country_name or "Unknown Country",
+                        country_code=country_iso or "XX",
+                        city=city_name,
+                        region=region_name,
+                        latitude=lat_val,
+                        longitude=lon_val,
+                        asn=asn_num,
+                        as_org=as_org_name,
+                        isp=as_org_name,
+                        is_private=False,
+                    )
+                    self._apply_threat_heuristics(intel, ip_obj)
+                    self._cache[clean_ip] = intel
+                    return intel
+            except Exception:
+                pass
+
+        # 4. Check Embedded Offline Forensic Database
         if clean_ip in OFFLINE_IP_DATABASE:
             entry = OFFLINE_IP_DATABASE[clean_ip]
-            lat_val = entry.get("latitude")
-            lon_val = entry.get("longitude")
-            asn_val = entry.get("asn")
+            offline_lat = entry.get("latitude")
+            offline_lon = entry.get("longitude")
+            offline_asn = entry.get("asn")
             intel = IPNetworkIntelligence(
                 ip=clean_ip,
                 country=str(entry.get("country")) if entry.get("country") else None,
                 country_code=str(entry.get("country_code")) if entry.get("country_code") else None,
                 city=str(entry.get("city")) if entry.get("city") else None,
                 region=str(entry.get("region")) if entry.get("region") else None,
-                latitude=float(str(lat_val)) if lat_val is not None else None,
-                longitude=float(str(lon_val)) if lon_val is not None else None,
-                asn=int(str(asn_val)) if asn_val is not None else None,
+                latitude=float(str(offline_lat)) if offline_lat is not None else None,
+                longitude=float(str(offline_lon)) if offline_lon is not None else None,
+                asn=int(str(offline_asn)) if offline_asn is not None else None,
                 as_org=str(entry.get("as_org")) if entry.get("as_org") else None,
                 isp=str(entry.get("isp")) if entry.get("isp") else None,
                 is_private=False,

@@ -677,7 +677,7 @@ class EmailInspector:
         if output_path:
             out = Path(output_path)
             out.parent.mkdir(parents=True, exist_ok=True)
-            out.write_text(html_content, encoding="utf-8")
+            out.write_text(html_content, encoding="utf-8", errors="replace")
 
         return html_content
 
