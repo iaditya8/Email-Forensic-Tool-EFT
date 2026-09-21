@@ -224,9 +224,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build a static binary analysis module that parses Windows Portable Executable (PE) headers, evaluates section names (`.text`, `.data`, `.rsrc`), computes Shannon Entropy per section, extracts imported DLLs and API functions, and extracts VBA macros from legacy OLE compound files (`.doc`, `.xls`).
   * *Why:* High entropy (>7.2) reveals packed or encrypted ransomware, while suspicious API imports (e.g., `VirtualAlloc`, `WriteProcessMemory`, `CreateRemoteThread`) indicate process injection payloads.
 * **Done when:**
-  - [ ] Shannon Entropy computed per PE section with high-entropy alerts.
-  - [ ] Suspicious Windows API imports flagged for process hollowing and keylogging.
-  - [ ] VBA macro extractor extracts and deobfuscates script code from OLE files.
+  - [x] Shannon Entropy computed per PE section with high-entropy alerts.
+  - [x] Suspicious Windows API imports flagged for process hollowing and keylogging.
+  - [x] VBA macro extractor extracts and deobfuscates script code from OLE files.
 
 ---
 
