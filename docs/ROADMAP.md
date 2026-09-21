@@ -348,9 +348,9 @@ This document serves as the master source for creating GitHub Issues and trackin
     * **Memory Dump Scanner**
   * *Why:* Provides an all-in-one, air-gapped web platform for both desktop and mobile phone browsers.
 * **Done when:**
-  - [ ] Single-page web dashboard supports seamless tab switching between all 6 forensic modules.
-  - [ ] Air-gapped architecture preserved with zero external CDN dependencies.
-  - [ ] Full session persistence across browser refreshes for all tools.
+  - [x] Single-page web dashboard supports seamless tab switching between all 6 forensic modules.
+  - [x] Air-gapped architecture preserved with zero external CDN dependencies.
+  - [x] Full session persistence across browser refreshes for all tools.
 
 ### Task 11.3: Cross-Module Unified Evidence Ledger & Master Case Report
 * **What needs to be built, and why:**
