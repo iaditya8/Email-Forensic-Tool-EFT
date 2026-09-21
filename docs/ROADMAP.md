@@ -175,18 +175,18 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Integrates IDN/Homoglyph transliteration, typosquatting Levenshtein distance against protected brand watchlists, and disposable/temporary email provider catalogs.
   * *Why:* Enables SOC analysts and investigators to perform fast pre-triage, verify lookalike domains, and check domain authentication posture before receiving full headers.
 * **Done when:**
-  - [ ] `DomainOSINTAnalyzer` queries DNS (or offline cache) for MX, SPF, DMARC, and BIMI.
-  - [ ] Homoglyph and lookalike score calculated against `watchlist.json`.
-  - [ ] Disposable email provider detection returns true/false with provider classification.
-  - [ ] Outputs a structured `DomainOSINTReport` with a composite 0-100 reputation score.
+  - [x] `DomainOSINTAnalyzer` queries DNS (or offline cache) for MX, SPF, DMARC, and BIMI.
+  - [x] Homoglyph and lookalike score calculated against `watchlist.json`.
+  - [x] Disposable email provider detection returns true/false with provider classification.
+  - [x] Outputs a structured `DomainOSINTReport` with a composite 0-100 reputation score.
 
 ### Task 6.2: Unified CLI Lookup Command (`eft lookup` / `eft osint`)
 * **What needs to be built, and why:**
   * Implement CLI command `eft lookup <email_or_domain>` with options `--json`, `--dns-timeout`, and `--offline`.
   * *Why:* Provides rapid command-line triage for incident responders directly in their terminal.
 * **Done when:**
-  - [ ] `eft lookup user@example.com` outputs rich color-coded terminal tables for DNS, SPF/DMARC posture, and brand risk.
-  - [ ] Comprehensive automated tests cover CLI options and report formats.
+  - [x] `eft lookup user@example.com` outputs rich color-coded terminal tables for DNS, SPF/DMARC posture, and brand risk.
+  - [x] Comprehensive automated tests cover CLI options and report formats.
 
 ### Task 6.3: Web Dashboard Quick OSINT Inspector Tab
 * **What needs to be built, and why:**
@@ -194,8 +194,8 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Visualizes DNS MX/SPF/DMARC security badges, disposable mail warnings, and lookalike brand comparison cards.
   * *Why:* Delivers a complete, all-in-one workflow for both full-file forensic triage and rapid address reputation queries.
 * **Done when:**
-  - [ ] REST API endpoint `POST /api/osint/lookup` added to FastAPI router.
-  - [ ] Web dashboard includes a dedicated OSINT Inspector tab with real-time analysis results.
+  - [x] REST API endpoint `POST /api/osint/lookup` added to FastAPI router.
+  - [x] Web dashboard includes a dedicated OSINT Inspector tab with real-time analysis results.
 
 ---
 
