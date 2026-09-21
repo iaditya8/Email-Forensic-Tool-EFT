@@ -215,9 +215,9 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build an artifact inspector that extracts EXIF metadata from images (JPEG, PNG, TIFF) including camera make/model, GPS coordinates, timestamps, and author metadata from Office documents (`.docx`, `.xlsx`, `.pptx`) and PDFs (creator, producer, revision history).
   * *Why:* Embedded metadata establishes evidence provenance, geolocation of creation, and author attribution in digital investigations.
 * **Done when:**
-  - [ ] Extracts GPS coordinates with decimal latitude/longitude and Google Maps link.
-  - [ ] Extracts author, last modified user, creation/modification timestamps, and revision counts.
-  - [ ] Sanitizes or highlights suspicious metadata anomalies (e.g., hidden script streams, PDF `/Launch` or `/JavaScript` actions).
+  - [x] Extracts GPS coordinates with decimal latitude/longitude and Google Maps link.
+  - [x] Extracts author, last modified user, creation/modification timestamps, and revision counts.
+  - [x] Sanitizes or highlights suspicious metadata anomalies (e.g., hidden script streams, PDF `/Launch` or `/JavaScript` actions).
 
 ### Task 7.3: Static PE & OLE Binary Analyzer
 * **What needs to be built, and why:**
