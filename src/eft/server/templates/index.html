@@ -1021,12 +1021,34 @@
       document.getElementById('res-sha256').innerText = data.sha256 || (data.hashes ? data.hashes.sha256 : "-");
 
       renderCriticalAlerts(risk.findings || risk.contributing_factors || []);
-      renderAuthTab(email.auth_results || {});
-      renderTransitTab(email.transit_route || []);
-      renderUrlsTab(email.extracted_urls || []);
-      renderAttachmentsTab(email.attachments || []);
-      renderBECTab(email.bec_signals || {}, risk.findings || []);
-      renderTimelineTab(email.evidence_timeline || []);
+      renderAuthTab(email.authentication_report || email.auth_results || {});
+      renderTransitTab(
+        email.transit_route
+          ? email.transit_route.hops ||
+              (Array.isArray(email.transit_route) ? email.transit_route : [])
+          : []
+      );
+      renderUrlsTab(
+        email.url_report
+          ? email.url_report.urls || []
+          : email.extracted_urls || (Array.isArray(email.urls) ? email.urls : [])
+      );
+      renderAttachmentsTab(
+        email.extracted_attachments ||
+          email.attachments ||
+          (email.attachment_threat_report && email.attachment_threat_report.attachments
+            ? email.attachment_threat_report.attachments
+            : [])
+      );
+      renderBECTab(
+        email.bec_report || email.bec_signals || {},
+        risk.findings || risk.contributing_factors || []
+      );
+      renderTimelineTab(
+        email.timeline_report
+          ? email.timeline_report.events || []
+          : email.evidence_timeline || (Array.isArray(email.timeline) ? email.timeline : [])
+      );
       renderRawTab(email.headers || {}, email.body_plain || email.body_html || "");
       renderEmailSenderOSINT(email.sender ? email.sender.address : null);
     }
@@ -1035,7 +1057,8 @@
       const container = document.getElementById('critical-alerts-container');
       if (!container) return;
       container.innerHTML = "";
-      const criticals = findings.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH' || (f.weight && f.weight >= 20));
+      const rawList = Array.isArray(findings) ? findings : [];
+      const criticals = rawList.filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH' || (f.weight && f.weight >= 20));
       if (criticals.length === 0) return;
 
       criticals.forEach(f => {
@@ -1053,18 +1076,19 @@
       if (!tbody) return;
       tbody.innerHTML = "";
 
-      const spf = auth.spf || {};
-      const spfVerdict = (spf.result || 'none').toUpperCase();
+      const spf = (auth && auth.spf) ? auth.spf : {};
+      const spfVerdict = (spf.status || spf.result || 'none').toUpperCase();
       const spfPass = spfVerdict === 'PASS';
       const spfRow = `<tr>
         <td><strong>SPF</strong></td>
         <td><span class="auth-badge ${spfPass ? 'auth-pass' : 'auth-fail'}">${spfVerdict}</span></td>
-        <td>${escapeHtml(spf.domain || '-')}</td>
+        <td>${escapeHtml(spf.domain || spf.mail_from_domain || '-')}</td>
         <td>${escapeHtml(spf.details || spf.raw_header || 'No record')}</td>
       </tr>`;
 
-      const dkim = auth.dkim || {};
-      const dkimVerdict = (dkim.result || 'none').toUpperCase();
+      const dkimList = Array.isArray(auth.dkim) ? auth.dkim : (auth.dkim ? [auth.dkim] : []);
+      const dkim = dkimList.length > 0 ? dkimList[0] : {};
+      const dkimVerdict = (dkim.status || dkim.result || 'none').toUpperCase();
       const dkimPass = dkimVerdict === 'PASS';
       const dkimRow = `<tr>
         <td><strong>DKIM</strong></td>
@@ -1073,14 +1097,14 @@
         <td>${escapeHtml(dkim.details || dkim.signature_header || 'No signature')}</td>
       </tr>`;
 
-      const dmarc = auth.dmarc || {};
-      const dmarcVerdict = (dmarc.result || 'none').toUpperCase();
+      const dmarc = (auth && auth.dmarc) ? auth.dmarc : {};
+      const dmarcVerdict = (dmarc.status || dmarc.result || 'none').toUpperCase();
       const dmarcPass = dmarcVerdict === 'PASS';
       const dmarcRow = `<tr>
         <td><strong>DMARC</strong></td>
         <td><span class="auth-badge ${dmarcPass ? 'auth-pass' : 'auth-fail'}">${dmarcVerdict}</span></td>
-        <td>${escapeHtml(dmarc.domain || '-')}</td>
-        <td>Policy: <code>${escapeHtml(dmarc.policy || 'none')}</code> | Alignment: ${escapeHtml(dmarc.alignment || 'none')}</td>
+        <td>${escapeHtml(dmarc.header_from_domain || dmarc.domain || '-')}</td>
+        <td>Policy: <code>${escapeHtml(dmarc.policy || 'none')}</code> | Alignment: ${escapeHtml(dmarc.alignment || dmarc.disposition || 'none')}</td>
       </tr>`;
 
       tbody.innerHTML = spfRow + dkimRow + dmarcRow;
@@ -1091,13 +1115,16 @@
       if (!tbody) return;
       tbody.innerHTML = "";
 
-      if (hops.length === 0) {
+      const hopList = Array.isArray(hops) ? hops : (hops && Array.isArray(hops.hops) ? hops.hops : []);
+
+      if (hopList.length === 0) {
         tbody.innerHTML = "<tr><td colspan='6' style='color:var(--text-muted); text-align:center;'>No transit hops parsed.</td></tr>";
       } else {
-        hops.forEach((hop, idx) => {
+        hopList.forEach((hop, idx) => {
           const tr = document.createElement('tr');
-          const isTor = hop.is_tor || (hop.anomalies && hop.anomalies.some(a => a.toLowerCase().includes('tor')));
-          const geoStr = `${hop.geoip ? hop.geoip.country || '' : ''} ${hop.geoip ? hop.geoip.asn || '' : ''}`.trim() || 'Internal/Private';
+          const isTor = hop.is_tor || (hop.anomalies && hop.anomalies.some(a => String(a).toLowerCase().includes('tor')));
+          const geo = hop.network_intelligence || hop.geoip || {};
+          const geoStr = `${geo.country || geo.country_code || ''} ${geo.asn ? 'AS' + geo.asn : ''}`.trim() || (hop.is_private_ip ? 'Private/Internal' : '-');
           tr.innerHTML = `
             <td>#${idx + 1}</td>
             <td><code>${escapeHtml(hop.from_ip || '-')}</code><br><span style="font-size:0.75rem; color:var(--text-muted);">${escapeHtml(hop.from_host || '')}</span></td>
@@ -1127,20 +1154,23 @@
       if (!tbody) return;
       tbody.innerHTML = "";
 
-      if (urls.length === 0) {
+      const urlList = Array.isArray(urls) ? urls : (urls && Array.isArray(urls.urls) ? urls.urls : []);
+
+      if (urlList.length === 0) {
         tbody.innerHTML = "<tr><td colspan='4' style='color:var(--text-muted); text-align:center;'>No URLs extracted from message body.</td></tr>";
         return;
       }
 
-      urls.forEach(u => {
+      urlList.forEach(u => {
         const tr = document.createElement('tr');
-        const score = u.risk_score || 0;
+        const score = u.threat_score || u.risk_score || 0;
         let badgeClass = score >= 50 ? 'auth-fail' : (score >= 20 ? 'auth-none' : 'auth-pass');
+        const flags = u.forensic_flags || u.flags || [];
         tr.innerHTML = `
           <td><code>${escapeHtml(u.defanged_url || u.url)}</code></td>
           <td>${escapeHtml(u.domain || '-')}</td>
-          <td><span class="auth-badge ${badgeClass}">${score}/100</span></td>
-          <td>${u.flags && u.flags.length > 0 ? escapeHtml(u.flags.join(', ')) : '<span style="color:var(--text-muted);">Clean</span>'}</td>
+          <td><span class="auth-badge ${badgeClass}">${Math.round(score)}/100</span></td>
+          <td>${flags.length > 0 ? escapeHtml(flags.join(', ')) : '<span style="color:var(--text-muted);">Clean</span>'}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -1151,20 +1181,23 @@
       if (!tbody) return;
       tbody.innerHTML = "";
 
-      if (attachments.length === 0) {
+      const attList = Array.isArray(attachments) ? attachments : (attachments && Array.isArray(attachments.attachments) ? attachments.attachments : []);
+
+      if (attList.length === 0) {
         tbody.innerHTML = "<tr><td colspan='5' style='color:var(--text-muted); text-align:center;'>No attachments found in email.</td></tr>";
         return;
       }
 
-      attachments.forEach(att => {
+      attList.forEach(att => {
         const tr = document.createElement('tr');
-        const findings = att.threat_findings || [];
+        const findings = att.threat_findings || att.yara_matches || [];
         const findingsStr = findings.length > 0 ? `<span class="auth-badge auth-fail">${escapeHtml(findings.join(', '))}</span>` : '<span style="color:var(--text-muted);">Clean</span>';
+        const shaVal = att.sha256 || (att.hashes ? att.hashes.sha256 : '-');
         tr.innerHTML = `
           <td><strong>${escapeHtml(att.filename || 'attachment.bin')}</strong></td>
-          <td><code>${escapeHtml(att.mime_type || 'application/octet-stream')}</code></td>
+          <td><code>${escapeHtml(att.mime_type || att.detected_mime || 'application/octet-stream')}</code></td>
           <td>${att.size_bytes ? (att.size_bytes / 1024).toFixed(1) + ' KB' : '-'}</td>
-          <td><code style="font-size:0.75rem;">${escapeHtml(att.sha256 || '-')}</code></td>
+          <td><code style="font-size:0.75rem;">${escapeHtml(shaVal)}</code></td>
           <td>${findingsStr}</td>
         `;
         tbody.appendChild(tr);
@@ -1175,21 +1208,27 @@
       const container = document.getElementById('bec-findings-container');
       if (!container) return;
 
-      const becFindings = findings.filter(f => (f.category && f.category.toLowerCase().includes('bec')) || (f.name && f.name.toLowerCase().includes('bec')) || (f.indicator_type && f.indicator_type.includes('BEC')));
+      const rawFindings = Array.isArray(findings) ? findings : [];
+      const becFindings = rawFindings.filter(f => (f.category && String(f.category).toLowerCase().includes('bec')) || (f.name && String(f.name).toLowerCase().includes('bec')) || (f.indicator_type && String(f.indicator_type).includes('BEC')));
       
+      const bObj = bec || {};
+      const isImpersonation = bObj.is_impersonation || bObj.is_display_name_spoofed || false;
+      const isUrgent = bObj.has_financial_urgency || bObj.is_financial_or_urgency || false;
+      const isSpoof = bObj.display_name_spoof || bObj.is_display_name_spoofed || false;
+
       let html = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
           <div class="stat-box">
             <div class="title">Impersonation Signals</div>
-            <div class="value">${bec.is_impersonation ? '<span style="color:var(--risk-critical)">DETECTED</span>' : 'None'}</div>
+            <div class="value">${isImpersonation ? '<span style="color:var(--risk-critical)">DETECTED</span>' : 'None'}</div>
           </div>
           <div class="stat-box">
             <div class="title">Urgency & Financial Keywords</div>
-            <div class="value">${bec.has_financial_urgency ? '<span style="color:var(--risk-high)">HIGH URGENCY</span>' : 'Normal'}</div>
+            <div class="value">${isUrgent ? '<span style="color:var(--risk-high)">HIGH URGENCY</span>' : 'Normal'}</div>
           </div>
           <div class="stat-box">
             <div class="title">Lookalike / Display Name Spoof</div>
-            <div class="value">${bec.display_name_spoof ? '<span style="color:var(--risk-critical)">YES</span>' : 'No'}</div>
+            <div class="value">${isSpoof ? '<span style="color:var(--risk-critical)">YES</span>' : 'No'}</div>
           </div>
         </div>
       `;
@@ -1211,18 +1250,21 @@
       if (!tbody) return;
       tbody.innerHTML = "";
 
-      if (events.length === 0) {
+      const evList = Array.isArray(events) ? events : (events && Array.isArray(events.events) ? events.events : []);
+
+      if (evList.length === 0) {
         tbody.innerHTML = "<tr><td colspan='4' style='color:var(--text-muted); text-align:center;'>No timeline events.</td></tr>";
         return;
       }
 
-      events.forEach(ev => {
+      evList.forEach(ev => {
         const tr = document.createElement('tr');
+        const ts = ev.timestamp_utc || ev.timestamp || '-';
         tr.innerHTML = `
-          <td><code>${escapeHtml(ev.timestamp || '-')}</code></td>
-          <td><strong>${escapeHtml(ev.event_type || 'Event')}</strong></td>
-          <td>${escapeHtml(ev.source || '-')}</td>
-          <td>${escapeHtml(ev.description || '')}</td>
+          <td><code>${escapeHtml(ts)}</code></td>
+          <td><strong>${escapeHtml(ev.event_type || ev.category || 'Event')}</strong></td>
+          <td>${escapeHtml(ev.source || ev.actor_or_source || '-')}</td>
+          <td>${escapeHtml(ev.description || ev.title || '')}</td>
         `;
         tbody.appendChild(tr);
       });
