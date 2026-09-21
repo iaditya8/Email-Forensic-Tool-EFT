@@ -307,8 +307,8 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build an in-memory pattern matching engine that scans RAM strings for IPv4/IPv6 addresses, URLs, email addresses, crypto wallets (Bitcoin/Ethereum), JWT tokens, Base64 shellcode headers, and private keys.
   * *Why:* In-memory scraping uncovers active C2 server connections, decrypted payloads, and injected credentials.
 * **Done when:**
-  - [ ] Regex scanner identifies and extracts network IoCs, unencrypted credentials, and API secrets.
-  - [ ] Cross-references extracted hashes against `iocs.txt` and IP addresses against MaxMind GeoIP.
+  - [x] Regex scanner identifies and extracts network IoCs, unencrypted credentials, and API secrets.
+  - [x] Cross-references extracted hashes against `iocs.txt` and IP addresses against MaxMind GeoIP.
 
 ### Task 10.3: Volatile Memory YARA Scanner & Process Anomaly Attribution
 * **What needs to be built, and why:**
