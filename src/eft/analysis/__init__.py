@@ -7,6 +7,7 @@ from eft.analysis.binary_static_analyzer import BinaryStaticAnalyzer
 from eft.analysis.credential_leak_analyzer import CredentialLeakAnalyzer
 from eft.analysis.dns_threat_analyzer import DNSThreatAnalyzer
 from eft.analysis.domain_osint import DomainOSINTAnalyzer
+from eft.analysis.evtx_analyzer import WindowsLogAnalyzer
 from eft.analysis.file_analyzer import FileArtifactAnalyzer
 from eft.analysis.metadata_extractor import MetadataExtractor
 from eft.analysis.network_intelligence import NetworkIntelligenceService
@@ -36,4 +37,5 @@ __all__ = [
     "NetworkPCAPAnalyzer",
     "DNSThreatAnalyzer",
     "CredentialLeakAnalyzer",
+    "WindowsLogAnalyzer",
 ]
