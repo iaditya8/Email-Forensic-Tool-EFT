@@ -286,8 +286,8 @@ This document serves as the master source for creating GitHub Issues and trackin
   * Build an ingestion parser for cloud audit logs including Microsoft 365 Unified Audit Logs (UAL) and Google Workspace Admin audit records in JSON/CSV formats.
   * *Why:* Modern attacks target cloud mailboxes, OAuth app grants, and inbox forwarding rules.
 * **Done when:**
-  - [ ] Ingests M365 UAL records and flags suspicious inbox forwarding rules (`New-InboxRule`), mailbox permissions changes (`Add-MailboxPermission`), and anomalous multi-geo logins.
-  - [ ] Ingests Google Workspace audit trails and correlates admin actions with threat events.
+  - [x] Ingests M365 UAL records and flags suspicious inbox forwarding rules (`New-InboxRule`), mailbox permissions changes (`Add-MailboxPermission`), and anomalous multi-geo logins.
+  - [x] Ingests Google Workspace audit trails and correlates admin actions with threat events.
 
 ---
 
