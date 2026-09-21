@@ -22,6 +22,15 @@ from eft.models.custody import (
     EvidenceLedger,
     EvidenceManifest,
 )
+from eft.models.metadata import (
+    AudioVideoMetadata,
+    DocumentMetadata,
+    ExtractedMetadataReport,
+    GPSCoordinates,
+    ImageEXIFMetadata,
+    MetadataAnomaly,
+    PDFStructureMetadata,
+)
 from eft.models.osint import (
     BIMIPosture,
     BrandMatchResult,
@@ -86,4 +95,11 @@ __all__ = [
     "MagicByteSignature",
     "FileTypeIdentification",
     "FileArtifactReport",
+    "GPSCoordinates",
+    "ImageEXIFMetadata",
+    "DocumentMetadata",
+    "PDFStructureMetadata",
+    "AudioVideoMetadata",
+    "MetadataAnomaly",
+    "ExtractedMetadataReport",
 ]
