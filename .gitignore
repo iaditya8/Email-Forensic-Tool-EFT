@@ -32,7 +32,7 @@ venv/
 ENV/
 env/
 
-# Node / Frontend
+# Node / Frontend / Web
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -47,16 +47,31 @@ out/
 *.swp
 *.swo
 *~
-.DS_Store
+*.sublime-project
+*.sublime-workspace
 
-# Testing and coverage
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Testing, type checking, and coverage
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
 .tox/
 .nox/
 
-# Forensic evidence / temporary test sample data
+# Forensic evidence / temporary sample data
 data/evidence/*
 !data/evidence/.gitkeep
 data/exports/*
@@ -64,18 +79,21 @@ data/exports/*
 data/geoip/*.mmdb
 !data/geoip/.gitkeep
 !data/geoip/README.md
+
+# Logs & scratch files
 logs/
 *.log
+scratch/
 
-# GitHub templates
-.github/PULL_REQUEST_TEMPLATE.md
-PULL_REQUEST_TEMPLATE.md
-pull_request_template.md
-
-# Environment variables
+# Environment variables & local secrets
 .env
 .env.local
 .env.*.local
 
-# Local Issue & PR documentation (excluded from remote)
+# Local root loose data copies (canonical versions are in data/)
+/iocs.txt
+/watchlist.json
+
+# Local Issue & PR documentation drafts (preserved locally)
 docs/issue_docs/
+docs/issue_docs/*
