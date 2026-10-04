@@ -11,7 +11,7 @@
 
 **Enterprise-Grade Digital Forensics & Incident Response (DFIR) Platform for Multi-Modal Evidence Aggregation, Email Analysis, Network PCAPs, Event Logs, Memory Triage, Binary Inspection, and Court-Admissible Reporting.**
 
-[Key Modules](#-key-forensic-modules) • [System Architecture](#-system-architecture) • [CLI Commands](#-unified-command-line-interface) • [Web Workstation](#-air-gapped-web-workstation) • [Python API](#-python-sdk--programmatic-usage) • [Evidence Integrity](#-cryptographic-evidence-integrity) • [Installation](#-installation--setup)
+[Key Modules](#-key-forensic-modules) • [System Architecture](#-system-architecture) • [CLI Commands](#-unified-command-line-interface) • [Web Workstation](#-air-gapped-web-workstation) • [Split Deployment](#-split-deployment-backend--frontend) • [Python API](#-python-sdk--programmatic-usage) • [Evidence Integrity](#-cryptographic-evidence-integrity) • [Installation](#-installation--setup)
 
 </div>
 
@@ -195,6 +195,19 @@ eft serve --port 8000 --open
 * **Full Tab Navigation**: Switch seamlessly between **Email Workstation**, **File Inspector**, **OSINT Lookup**, **PCAP Analyzer**, **Log Correlator**, **Memory Scanner**, and **Master Case Report**.
 * **Zero External Dependencies**: 100% self-contained Vanilla HTML5/CSS/JavaScript with embedded SVG rendering—no external CDN requests or internet connectivity required.
 * **Interactive Visualizations**: Interactive MTA transit maps, risk dials, timeline charts, and packet breakdown tables.
+
+---
+
+## 🚀 Split Deployment (Backend + Frontend)
+
+You can deploy EFT in split mode:
+
+- **Backend API** on Render / Railway / Fly.io / VPS
+- **Frontend dashboard** on Vercel (from `/frontend`)
+
+See full deployment steps, env vars, Vercel settings, health check, and local split-mode development:
+
+- [`docs/DEPLOYMENT_SPLIT.md`](docs/DEPLOYMENT_SPLIT.md)
 
 ---
 

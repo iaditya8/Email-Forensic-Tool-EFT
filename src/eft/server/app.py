@@ -2,10 +2,25 @@
 
 from __future__ import annotations
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from eft.server.routes import router
+
+
+def _parse_cors_origins() -> list[str]:
+    """Parse CORS origins from environment for split frontend/backend deployments."""
+    env_value = os.getenv("EFT_CORS_ALLOW_ORIGINS", "")
+    if env_value.strip():
+        return [origin.strip() for origin in env_value.split(",") if origin.strip()]
+    return [
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
 
 
 def create_app() -> FastAPI:
@@ -22,11 +37,11 @@ def create_app() -> FastAPI:
         redoc_url=None,
     )
 
-    # Air-Gapped CORS (Allow localhost / local loopback origins)
+    # CORS defaults are local-only. Set EFT_CORS_ALLOW_ORIGINS for deployed frontends.
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
+        allow_origins=_parse_cors_origins(),
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
