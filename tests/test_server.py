@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Any, Dict
 
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
@@ -32,6 +33,30 @@ def test_server_dashboard_html() -> None:
     assert "text/html" in res.headers["content-type"]
     assert "Email Forensic Tool" in res.text
     assert "100% Air-Gapped" in res.text
+
+
+def test_server_dashboard_uses_configurable_api_base_url() -> None:
+    """Verify dashboard uses apiUrl() helper instead of hard-coded same-origin fetch paths."""
+    res = client.get("/")
+    assert res.status_code == 200
+    assert "function apiUrl(path)" in res.text
+    assert "fetch(apiUrl('/api/analyze')" in res.text
+
+
+def test_create_app_uses_env_cors_allow_origins(monkeypatch: Any) -> None:
+    """Verify CORS origins are configurable via EFT_CORS_ALLOW_ORIGINS."""
+    monkeypatch.setenv(
+        "EFT_CORS_ALLOW_ORIGINS",
+        "https://your-frontend.vercel.app,https://staging.example.com",
+    )
+    app = create_app()
+    cors_middleware = next((m for m in app.user_middleware if m.cls is CORSMiddleware), None)
+    assert cors_middleware is not None
+    assert cors_middleware.kwargs["allow_origins"] == [
+        "https://your-frontend.vercel.app",
+        "https://staging.example.com",
+    ]
+    assert cors_middleware.kwargs["allow_credentials"] is False
 
 
 def test_server_list_samples() -> None:
